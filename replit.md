@@ -1,10 +1,11 @@
-# [Project name]
+# ScholarMate – Smart Scholarship Finder
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A web application helping Indian college students (especially Maharashtra/Mumbai) discover scholarships and understand their preliminary eligibility.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, proxied at `/api`)
+- `pnpm --filter @workspace/scholarmate run dev` — run the frontend (proxied at `/`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,23 +15,33 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React 18 + Vite, Tailwind CSS, shadcn/ui, wouter, TanStack Query
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
+- Validation: Zod v3, drizzle-zod
+- API codegen: Orval (from OpenAPI spec in `lib/api-spec/openapi.yaml`)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — single source of truth for all API contracts
+- `lib/db/src/schema/scholarships.ts` — scholarships table schema
+- `artifacts/api-server/src/routes/scholarships.ts` — scholarship API routes
+- `artifacts/scholarmate/src/` — React frontend (pages, components)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Integer fields in OpenAPI response schemas use `type: number` (not `type: integer`) because Orval v8 generates `zod.int()` for `integer` which is Zod v4 only; the catalog pins Zod v3.
+- `casteCategories` is stored as a comma-separated string in Postgres (e.g. `"OBC,SC"`) and parsed to an array in the API layer — avoids needing `text[]` operator support in filters.
+- `GET /scholarships/stats` route is declared **before** `GET /scholarships/:id` in the router file to avoid Express shadowing the `/stats` literal path.
+- Default filter for `GET /scholarships` is `isActive=true` unless explicitly overridden.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Home page with hero, live platform stats, and featured scholarship cards
+- Discover page with full filter panel (state, provider type, course level, caste category, gender) and paginated scholarship grid
+- Scholarship detail page with full eligibility info, source attribution, and official application link
+- 29 real scholarships seeded (MahaDBT, NSP, Buddy4Study, institutional sources)
 
 ## User preferences
 
@@ -38,8 +49,11 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Always re-run `pnpm --filter @workspace/api-spec run codegen` after changing `lib/api-spec/openapi.yaml`
+- Use `type: number` (not `type: integer`) in OpenAPI response schemas to stay compatible with Zod v3
+- Do not add leaf workspace packages to root `tsconfig.json` references
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Scholarship data attribution: every record has `sourceName` + `sourceUrl` + `applicationUrl`

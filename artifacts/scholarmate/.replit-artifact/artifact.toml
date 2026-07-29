@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "ScholarMate"
+version = "1.0.0"
+id = "artifacts/scholarmate"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23495
+
+[services.development]
+run = "pnpm --filter @workspace/scholarmate run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/scholarmate", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/scholarmate/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23495"
+BASE_PATH = "/"

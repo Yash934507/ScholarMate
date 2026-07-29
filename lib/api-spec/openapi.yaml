@@ -3,13 +3,16 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ScholarMate API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: scholarships
+    description: Scholarship catalogue operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +27,118 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /scholarships:
+    get:
+      operationId: listScholarships
+      tags: [scholarships]
+      summary: List scholarships
+      description: Returns a paginated list of scholarships with optional filters
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Full-text search across title and description
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by state (e.g. Maharashtra, National)
+        - name: providerType
+          in: query
+          schema:
+            type: string
+            enum: [govt, ngo, private, university]
+          description: Filter by provider type
+        - name: courseLevel
+          in: query
+          schema:
+            type: string
+            enum: [School, Diploma, UG, PG, PhD, Any]
+          description: Filter by course level
+        - name: casteCategory
+          in: query
+          schema:
+            type: string
+            enum: [General, OBC, SC, ST, EWS, NT, SBC, VJNT, All]
+          description: Filter by caste category
+        - name: gender
+          in: query
+          schema:
+            type: string
+            enum: [any, male, female]
+          description: Filter by gender eligibility
+        - name: maxIncome
+          in: query
+          schema:
+            type: integer
+          description: Filter scholarships available for annual income up to this value (INR)
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+          description: Filter by active status (default true)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 12
+      responses:
+        "200":
+          description: Paginated scholarship list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipList"
+
+  /scholarships/stats:
+    get:
+      operationId: getScholarshipStats
+      tags: [scholarships]
+      summary: Scholarship platform statistics
+      description: Returns aggregate counts for the platform homepage
+      responses:
+        "200":
+          description: Platform statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipStats"
+
+  /scholarships/{id}:
+    get:
+      operationId: getScholarship
+      tags: [scholarships]
+      summary: Get scholarship by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scholarship detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scholarship"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +149,145 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Scholarship:
+      type: object
+      required:
+        - id
+        - title
+        - providerName
+        - providerType
+        - description
+        - sourceName
+        - sourceUrl
+        - applicationUrl
+        - isActive
+        - state
+        - courseLevel
+        - casteCategories
+        - gender
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: number
+          description: Scholarship ID
+        title:
+          type: string
+        providerName:
+          type: string
+        providerType:
+          type: string
+          enum: [govt, ngo, private, university]
+        description:
+          type: string
+        amount:
+          type: ["number", "null"]
+          description: Award amount in INR (null if varies)
+        frequency:
+          type: ["string", "null"]
+          enum: [one-time, monthly, annual, null]
+        sourceName:
+          type: string
+        sourceUrl:
+          type: string
+        applicationUrl:
+          type: string
+        deadline:
+          type: ["string", "null"]
+          description: Application deadline in YYYY-MM-DD format
+        isActive:
+          type: boolean
+        state:
+          type: string
+          description: State this scholarship targets, or "National"
+        courseLevel:
+          type: string
+          enum: [School, Diploma, UG, PG, PhD, Any]
+        casteCategories:
+          type: array
+          items:
+            type: string
+          description: Eligible caste categories
+        gender:
+          type: string
+          enum: [any, male, female]
+        maxAnnualIncome:
+          type: ["number", "null"]
+          description: Maximum annual family income in INR (null if no income limit)
+        minPercentage:
+          type: ["number", "null"]
+          description: Minimum academic percentage required (null if not applicable)
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ScholarshipList:
+      type: object
+      required:
+        - scholarships
+        - total
+        - page
+        - limit
+      properties:
+        scholarships:
+          type: array
+          items:
+            $ref: "#/components/schemas/Scholarship"
+        total:
+          type: number
+        page:
+          type: number
+        limit:
+          type: number
+
+    ScholarshipStats:
+      type: object
+      required:
+        - totalScholarships
+        - totalStates
+        - providerTypes
+        - courseLevels
+      properties:
+        totalScholarships:
+          type: number
+        totalStates:
+          type: number
+        providerTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderTypeStat"
+        courseLevels:
+          type: array
+          items:
+            $ref: "#/components/schemas/CourseLevelStat"
+
+    ProviderTypeStat:
+      type: object
+      required:
+        - providerType
+        - count
+      properties:
+        providerType:
+          type: string
+        count:
+          type: number
+
+    CourseLevelStat:
+      type: object
+      required:
+        - courseLevel
+        - count
+      properties:
+        courseLevel:
+          type: string
+        count:
+          type: number
