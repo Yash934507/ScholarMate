@@ -1,0 +1,62 @@
+I am a BCS college student in Mumbai, Maharashtra, India, and I am developing a college mini project called "ScholarMate – Smart Scholarship Finder and Eligibility Checker."
+
+I want to build a professional, modern, responsive web application that helps Indian college students discover scholarships and understand whether they may meet the published eligibility criteria.
+
+IMPORTANT DEVELOPMENT RULE:
+Do NOT build the entire application at once.
+We will develop the project step-by-step.
+For this prompt, ONLY analyze and plan the project. Do not write the complete application.
+
+Project Goals:
+
+1. Help students discover scholarships available in India.
+2. Initially focus on Maharashtra and Mumbai students.
+3. Include scholarships from government portals, universities, institutions, NGOs, and private scholarship providers.
+4. Use publicly available scholarship information from sources such as:
+   - MahaDBT
+   - National Scholarship Portal (NSP)
+   - Buddy4Study
+   - Other legitimate scholarship providers and official sources
+5. Never copy another website's UI, branding, source code, or copyrighted content.
+6. Do not blindly scrape websites.
+7. Store only information that can legally and ethically be used.
+8. Every scholarship must have a "Source" and "Official Application Link."
+9. The system must clearly state that eligibility results are preliminary and students must verify the latest criteria on the official source before applying.
+
+Main user features:
+
+- Home page
+- Scholarship discovery
+- Search
+- Filters
+- Scholarship details
+- Preliminary eligibility checker
+- Student registration/login
+- Student profile
+- Saved scholarships
+- Application tracking
+- Deadline reminders
+- Scholarship comparison
+- Admin dashboard
+- Scholarship management
+
+First, produce ONLY:
+
+A. Complete system architecture
+B. Recommended technology stack
+C. Frontend architecture
+D. Backend architecture
+E. Database architecture
+F. User roles
+G. Main modules
+H. Suggested folder structure
+I. Data flow
+J. Development roadmap divided into 10–15 small stages
+K. MVP features
+L. Future features
+M. Security considerations
+N. Data-source and attribution strategy
+
+Do not implement the project yet.
+Do not generate unnecessary code.
+Wait for my next prompt after completing this planning stage.
