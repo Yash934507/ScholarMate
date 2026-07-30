@@ -239,8 +239,38 @@ export default function Discover() {
 
           {/* Main List */}
           <main className="lg:w-3/4">
-            <div className="hidden lg:flex justify-between items-center mb-6 bg-muted/30 p-4 rounded-xl border">
-              <span className="font-medium text-foreground">{data?.total || 0} Scholarships found</span>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 bg-muted/30 p-4 rounded-xl border">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-foreground">{data?.total || 0} Scholarships found</span>
+                {/* Active Filter Chips */}
+                {(currentParams.state || currentParams.courseLevel || currentParams.providerType) && (
+                  <div className="flex flex-wrap gap-1 ml-2 border-l pl-2 border-border/50">
+                    {currentParams.state && (
+                      <Badge variant="secondary" className="gap-1 bg-background text-xs font-normal">
+                        {currentParams.state} <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => applyFilters({ state: "" })} />
+                      </Badge>
+                    )}
+                    {currentParams.courseLevel && (
+                      <Badge variant="secondary" className="gap-1 bg-background text-xs font-normal">
+                        {currentParams.courseLevel} <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => applyFilters({ courseLevel: "" })} />
+                      </Badge>
+                    )}
+                    {currentParams.providerType && (
+                      <Badge variant="secondary" className="gap-1 bg-background text-xs font-normal">
+                        {formatProviderType(currentParams.providerType)} <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => applyFilters({ providerType: "" })} />
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <NativeSelect className="h-9 text-sm" defaultValue="newest">
+                  <option value="newest">Newest First</option>
+                  <option value="deadline">Deadline (Soonest)</option>
+                  <option value="amount">Amount (Highest)</option>
+                </NativeSelect>
+              </div>
             </div>
 
             {isLoading ? (
