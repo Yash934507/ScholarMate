@@ -1,14 +1,17 @@
 import { useParams, Link } from "wouter"
-import { useGetScholarship, getGetScholarshipQueryKey } from "@workspace/api-client-react"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { 
-  ArrowLeft, ExternalLink, AlertTriangle, Calendar, IndianRupee, 
+  ArrowLeft, ExternalLink, AlertTriangle, Calendar, 
   MapPin, GraduationCap, Building, User, Users, Percent, Briefcase
 } from "lucide-react"
+
+import { mockScholarships } from "@/lib/mock-data"
+import { ErrorState } from "@/components/error-state"
+import { ScholarshipCard } from "@/components/scholarship-card"
 
 function formatCurrency(amount: number | null | undefined) {
   if (amount === null || amount === undefined) return "Varies / As per scheme"
@@ -33,33 +36,49 @@ function formatProviderType(type: string) {
 export default function ScholarshipDetail() {
   const params = useParams()
   const id = parseInt(params.id || "0")
+  const [isLoading, setIsLoading] = useState(true)
+  
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [id])
 
-  const { data: scholarship, isLoading } = useGetScholarship(id, {
-    query: { enabled: !!id, queryKey: getGetScholarshipQueryKey(id) }
-  })
+  const scholarship = mockScholarships.find(s => s.id === id);
 
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <Skeleton className="h-6 w-24 mb-8" />
-        <Skeleton className="h-12 w-3/4 mb-4" />
-        <Skeleton className="h-6 w-1/2 mb-8" />
-        <Skeleton className="h-[400px] w-full" />
+        <div className="h-6 w-24 bg-muted animate-pulse rounded mb-8" />
+        <div className="h-12 w-3/4 bg-muted animate-pulse rounded mb-4" />
+        <div className="h-6 w-1/2 bg-muted animate-pulse rounded mb-8" />
+        <div className="h-[400px] w-full bg-muted animate-pulse rounded" />
       </div>
     )
   }
 
   if (!scholarship) {
     return (
-      <div className="container mx-auto px-4 py-20 text-center max-w-lg">
-        <h2 className="text-2xl font-bold mb-4">Scholarship Not Found</h2>
-        <p className="text-muted-foreground mb-8">The scholarship you are looking for does not exist or has been removed.</p>
-        <Link href="/discover" className={buttonVariants({ variant: "default" })}>
-          Browse All Scholarships
-        </Link>
+      <div className="container mx-auto px-4 py-20">
+        <ErrorState 
+          title="Scholarship Not Found"
+          description="The scholarship you are looking for does not exist or has been removed."
+        />
+        <div className="text-center mt-6">
+          <Link href="/discover" className={buttonVariants({ variant: "default" })}>
+            Browse All Scholarships
+          </Link>
+        </div>
       </div>
     )
   }
+
+  // Find related scholarships (same providerType or state, excluding current)
+  const relatedScholarships = mockScholarships
+    .filter(s => s.id !== scholarship.id && (s.providerType === scholarship.providerType || s.state === scholarship.state))
+    .slice(0, 3);
 
   return (
     <div className="bg-background min-h-screen pb-20">
@@ -170,6 +189,18 @@ export default function ScholarshipDetail() {
                 </p>
               </div>
             </div>
+            
+            {/* Related Scholarships */}
+            {relatedScholarships.length > 0 && (
+              <div className="pt-8">
+                <h2 className="text-2xl font-bold mb-6 text-foreground">Similar Scholarships</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {relatedScholarships.map(s => (
+                    <ScholarshipCard key={s.id} scholarship={s} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -209,7 +240,7 @@ export default function ScholarshipDetail() {
 
                   <div className="mt-6 pt-6 border-t text-xs text-muted-foreground text-center">
                     Source: {scholarship.sourceName} <br/>
-                    Last updated: {formatDate(scholarship.updatedAt)}
+                    Last updated: {formatDate("2026-07-28T00:00:00Z")}
                   </div>
                 </div>
               </CardContent>

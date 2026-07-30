@@ -1,24 +1,27 @@
 import { useState } from "react"
 import { Link } from "wouter"
-import { useListScholarships } from "@workspace/api-client-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Search, Plus, X, ArrowLeft, Check, AlertCircle } from "lucide-react"
+
+import { mockScholarships } from "@/lib/mock-data"
 
 export default function CompareScholarships() {
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
-  // Fetch list for search
-  const { data: searchResults } = useListScholarships({ search: searchQuery, limit: 10 })
+  // Local filtering for the search dropdown
+  const searchResults = mockScholarships.filter(s => {
+    if (!searchQuery) return true;
+    return s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           s.providerName.toLowerCase().includes(searchQuery.toLowerCase());
+  }).slice(0, 10);
   
-  // Fetch details for selected (in real app we'd fetch specific IDs, here we just use the list and filter)
-  const { data: allData } = useListScholarships({ limit: 50 })
-  const selectedScholarships = allData?.scholarships.filter(s => selectedIds.includes(s.id)) || []
+  // Selected scholarships for comparison
+  const selectedScholarships = mockScholarships.filter(s => selectedIds.includes(s.id))
 
   const toggleScholarship = (id: number) => {
     if (selectedIds.includes(id)) {
@@ -95,11 +98,11 @@ export default function CompareScholarships() {
                 </div>
               </div>
               <ScrollArea className="h-[300px]">
-                {searchResults?.scholarships.length === 0 ? (
+                {searchResults.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground text-sm">No scholarships found.</div>
                 ) : (
                   <div className="p-2 space-y-1">
-                    {searchResults?.scholarships.map(s => (
+                    {searchResults.map(s => (
                       <div 
                         key={s.id} 
                         className={`flex items-start justify-between p-3 rounded-md cursor-pointer hover:bg-muted transition-colors ${selectedIds.includes(s.id) ? 'bg-primary/5' : ''}`}
@@ -249,10 +252,10 @@ export default function CompareScholarships() {
                             <span className="text-muted-foreground">Open to all categories</span>
                           ) : (
                             s.casteCategories.map(c => (
-                              <span key={c} className="inline-flex px-2 py-0.5 border rounded text-xs bg-background">
-                                {c}
-                              </span>
-                            ))
+                               <span key={c} className="inline-flex px-2 py-0.5 border rounded text-xs bg-background">
+                                 {c}
+                               </span>
+                             ))
                           )}
                         </div>
                       </td>
