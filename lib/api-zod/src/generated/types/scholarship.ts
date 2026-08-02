@@ -5,50 +5,42 @@
  * ScholarMate API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ScholarshipApplicationMethod } from './scholarshipApplicationMethod';
 import type { ScholarshipCourseLevel } from './scholarshipCourseLevel';
+import type { ScholarshipDataStatus } from './scholarshipDataStatus';
 import type { ScholarshipFrequency } from './scholarshipFrequency';
-import type { ScholarshipGender } from './scholarshipGender';
+import type { ScholarshipGenderEligibility } from './scholarshipGenderEligibility';
 import type { ScholarshipProviderType } from './scholarshipProviderType';
+import type { ScholarshipStatus } from './scholarshipStatus';
+import type { ScholarshipVerificationStatus } from './scholarshipVerificationStatus';
 
 export interface Scholarship {
-  /** Scholarship ID */
   id: number;
-  title: string;
+  providerId: number;
   providerName: string;
   providerType: ScholarshipProviderType;
+  title: string;
+  slug: string;
   description: string;
-  /**
-     * Award amount in INR (null if varies)
-     * @nullable
-     */
-  amount?: number | null;
+  eligibilitySummary: string;
   /** @nullable */
-  frequency?: ScholarshipFrequency;
-  sourceName: string;
-  sourceUrl: string;
+  amountMin?: number | null;
+  /** @nullable */
+  amountMax?: number | null;
+  frequency: ScholarshipFrequency;
+  /** @nullable */
+  coverageType?: string | null;
+  applicationMethod: ScholarshipApplicationMethod;
   applicationUrl: string;
-  /**
-     * Application deadline in YYYY-MM-DD format
-     * @nullable
-     */
+  /** @nullable */
   deadline?: string | null;
-  isActive: boolean;
-  /** State this scholarship targets, or "National" */
+  status: ScholarshipStatus;
   state: string;
   courseLevel: ScholarshipCourseLevel;
-  /** Eligible caste categories */
-  casteCategories: string[];
-  gender: ScholarshipGender;
-  /**
-     * Maximum annual family income in INR (null if no income limit)
-     * @nullable
-     */
-  maxAnnualIncome?: number | null;
-  /**
-     * Minimum academic percentage required (null if not applicable)
-     * @nullable
-     */
-  minPercentage?: number | null;
+  genderEligibility: ScholarshipGenderEligibility;
+  lastVerifiedDate: string;
+  dataStatus: ScholarshipDataStatus;
+  verificationStatus: ScholarshipVerificationStatus;
   createdAt: string;
   updatedAt: string;
 }

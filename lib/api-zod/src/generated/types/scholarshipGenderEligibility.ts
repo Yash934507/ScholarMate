@@ -6,11 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ScholarshipGender = typeof ScholarshipGender[keyof typeof ScholarshipGender];
+export type ScholarshipGenderEligibility = typeof ScholarshipGenderEligibility[keyof typeof ScholarshipGenderEligibility];
 
 
-export const ScholarshipGender = {
+export const ScholarshipGenderEligibility = {
   any: 'any',
   male: 'male',
   female: 'female',
+  other: 'other',
 } as const;

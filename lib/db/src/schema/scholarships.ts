@@ -4,41 +4,47 @@ import {
   serial,
   boolean,
   integer,
-  real,
   date,
   timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { scholarshipProvidersTable } from "./scholarship-providers";
 
 export const scholarshipsTable = pgTable("scholarships", {
   id: serial("id").primaryKey(),
+  providerId: integer("provider_id")
+    .notNull()
+    .references(() => scholarshipProvidersTable.id, { onDelete: "restrict" }),
   title: text("title").notNull(),
-  providerName: text("provider_name").notNull(),
-  // govt | ngo | private | university
-  providerType: text("provider_type").notNull(),
+  slug: text("slug").notNull().unique(),
   description: text("description").notNull(),
-  // Award amount in INR; null = varies / fully funded
-  amount: integer("amount"),
-  // one-time | monthly | annual
-  frequency: text("frequency"),
-  sourceName: text("source_name").notNull(),
-  sourceUrl: text("source_url").notNull(),
+  // Short plain-language overview shown on cards
+  eligibilitySummary: text("eligibility_summary").notNull(),
+  amountMin: integer("amount_min"),
+  amountMax: integer("amount_max"),
+  // one_time | annual | monthly
+  frequency: text("frequency").notNull(),
+  coverageType: text("coverage_type"),
+  // online_portal | offline_form | email | in_person
+  applicationMethod: text("application_method").notNull(),
   applicationUrl: text("application_url").notNull(),
   deadline: date("deadline", { mode: "string" }),
-  isActive: boolean("is_active").notNull().default(true),
+  // draft | active | expired | closed | archived
+  status: text("status").notNull().default("draft"),
   // Target state, e.g. "Maharashtra" or "National"
-  state: text("state").notNull(),
+  state: text("state").notNull().default("National"),
   // School | Diploma | UG | PG | PhD | Any
-  courseLevel: text("course_level").notNull(),
-  // Stored as comma-separated string, e.g. "OBC,SC,ST" or "All"
-  casteCategories: text("caste_categories").notNull().default("All"),
-  // any | male | female
-  gender: text("gender").notNull().default("any"),
-  // Max annual family income in INR
-  maxAnnualIncome: integer("max_annual_income"),
-  // Minimum academic percentage
-  minPercentage: real("min_percentage"),
+  courseLevel: text("course_level").notNull().default("Any"),
+  // any | male | female | other
+  genderEligibility: text("gender_eligibility").notNull().default("any"),
+  lastVerifiedDate: date("last_verified_date", { mode: "string" }).notNull(),
+  // draft | pending_review | published | expired | archived
+  dataStatus: text("data_status").notNull().default("draft"),
+  // unverified | verified | disputed | needs_update
+  verificationStatus: text("verification_status")
+    .notNull()
+    .default("unverified"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -48,7 +54,9 @@ export const scholarshipsTable = pgTable("scholarships", {
     .$onUpdate(() => new Date()),
 });
 
-export const insertScholarshipSchema = createInsertSchema(scholarshipsTable).omit({
+export const insertScholarshipSchema = createInsertSchema(
+  scholarshipsTable,
+).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -56,3 +64,8 @@ export const insertScholarshipSchema = createInsertSchema(scholarshipsTable).omi
 
 export type InsertScholarship = z.infer<typeof insertScholarshipSchema>;
 export type Scholarship = typeof scholarshipsTable.$inferSelect;
+
+// Kept for backwards compatibility with legacy boolean isActive checks
+export function isScholarshipActive(row: Scholarship): boolean {
+  return row.status === "active";
+}

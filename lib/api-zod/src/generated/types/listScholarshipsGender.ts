@@ -13,4 +13,5 @@ export const ListScholarshipsGender = {
   any: 'any',
   male: 'male',
   female: 'female',
+  other: 'other',
 } as const;

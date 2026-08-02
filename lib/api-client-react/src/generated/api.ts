@@ -6,26 +6,48 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  AdminListScholarshipsParams,
+  AdminScholarshipList,
+  Category,
+  CategoryList,
+  CreateScholarshipRequest,
+  EligibilityCriteria,
   ErrorResponse,
   HealthStatus,
+  InsertCategory,
+  InsertEligibilityCriteria,
+  InsertProvider,
+  InsertRequiredDocument,
+  InsertScholarshipSource,
   ListScholarshipsParams,
-  Scholarship,
+  Provider,
+  ProviderList,
+  RequiredDocument,
+  ScholarshipDetail,
   ScholarshipList,
-  ScholarshipStats
+  ScholarshipSource,
+  ScholarshipStats,
+  SetScholarshipStatusRequest,
+  UpdateScholarshipRequest,
+  VerifyScholarshipRequest
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -145,7 +167,7 @@ export const getListScholarshipsUrl = (params?: ListScholarshipsParams,) => {
 }
 
 /**
- * Returns a paginated list of scholarships with optional filters
+ * Returns a paginated list of published, active scholarships with optional filters
  * @summary List scholarships
  */
 export const listScholarships = async (params?: ListScholarshipsParams, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipList> => {
@@ -303,9 +325,9 @@ export const getGetScholarshipUrl = (id: number,) => {
 /**
  * @summary Get scholarship by ID
  */
-export const getScholarship = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Scholarship> => {
+export const getScholarship = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipDetail> => {
 
-  return customFetch<Scholarship>(getGetScholarshipUrl(id),
+  return customFetch<ScholarshipDetail>(getGetScholarshipUrl(id),
   {
     ...options,
     method: 'GET'
@@ -368,4 +390,1257 @@ export function useGetScholarship<TData = Awaited<ReturnType<typeof getScholarsh
 
 
 
+
+export const getAdminListProvidersUrl = () => {
+
+
+
+
+  return `/api/admin/providers`
+}
+
+/**
+ * @summary List all scholarship providers
+ */
+export const adminListProviders = async ( options?: Parameters<typeof customFetch>[1]): Promise<ProviderList> => {
+
+  return customFetch<ProviderList>(getAdminListProvidersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListProvidersQueryKey = () => {
+    return [
+    `/api/admin/providers`
+    ] as const;
+    }
+
+
+export const getAdminListProvidersQueryOptions = <TData = Awaited<ReturnType<typeof adminListProviders>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListProvidersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListProviders>>> = ({ signal }) => adminListProviders({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof adminListProviders>>>
+export type AdminListProvidersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all scholarship providers
+ */
+
+export function useAdminListProviders<TData = Awaited<ReturnType<typeof adminListProviders>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListProvidersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateProviderUrl = () => {
+
+
+
+
+  return `/api/admin/providers`
+}
+
+/**
+ * @summary Create a scholarship provider
+ */
+export const adminCreateProvider = async (insertProvider: InsertProvider, options?: Parameters<typeof customFetch>[1]): Promise<Provider> => {
+
+  return customFetch<Provider>(getAdminCreateProviderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(insertProvider)
+  }
+);}
+
+
+
+
+
+export const getAdminCreateProviderMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateProvider>>, TError,{data: BodyType<InsertProvider>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateProvider>>, TError,{data: BodyType<InsertProvider>}, TContext> => {
+
+const mutationKey = ['adminCreateProvider'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateProvider>>, {data: BodyType<InsertProvider>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateProvider(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateProviderMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateProvider>>>
+    export type AdminCreateProviderMutationBody = BodyType<InsertProvider>
+    export type AdminCreateProviderMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a scholarship provider
+ */
+export const useAdminCreateProvider = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateProvider>>, TError,{data: BodyType<InsertProvider>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateProvider>>,
+        TError,
+        {data: BodyType<InsertProvider>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateProviderMutationOptions(options));
+    }
+
+export const getAdminListCategoriesUrl = () => {
+
+
+
+
+  return `/api/admin/categories`
+}
+
+/**
+ * @summary List all scholarship categories
+ */
+export const adminListCategories = async ( options?: Parameters<typeof customFetch>[1]): Promise<CategoryList> => {
+
+  return customFetch<CategoryList>(getAdminListCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListCategoriesQueryKey = () => {
+    return [
+    `/api/admin/categories`
+    ] as const;
+    }
+
+
+export const getAdminListCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof adminListCategories>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListCategoriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListCategories>>> = ({ signal }) => adminListCategories({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListCategories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof adminListCategories>>>
+export type AdminListCategoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all scholarship categories
+ */
+
+export function useAdminListCategories<TData = Awaited<ReturnType<typeof adminListCategories>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateCategoryUrl = () => {
+
+
+
+
+  return `/api/admin/categories`
+}
+
+/**
+ * @summary Create a scholarship category
+ */
+export const adminCreateCategory = async (insertCategory: InsertCategory, options?: Parameters<typeof customFetch>[1]): Promise<Category> => {
+
+  return customFetch<Category>(getAdminCreateCategoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(insertCategory)
+  }
+);}
+
+
+
+
+
+export const getAdminCreateCategoryMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateCategory>>, TError,{data: BodyType<InsertCategory>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateCategory>>, TError,{data: BodyType<InsertCategory>}, TContext> => {
+
+const mutationKey = ['adminCreateCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateCategory>>, {data: BodyType<InsertCategory>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateCategory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateCategory>>>
+    export type AdminCreateCategoryMutationBody = BodyType<InsertCategory>
+    export type AdminCreateCategoryMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a scholarship category
+ */
+export const useAdminCreateCategory = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateCategory>>, TError,{data: BodyType<InsertCategory>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateCategory>>,
+        TError,
+        {data: BodyType<InsertCategory>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateCategoryMutationOptions(options));
+    }
+
+export const getAdminListScholarshipsUrl = (params?: AdminListScholarshipsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/scholarships?${stringifiedParams}` : `/api/admin/scholarships`
+}
+
+/**
+ * @summary List all scholarships regardless of status
+ */
+export const adminListScholarships = async (params?: AdminListScholarshipsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminScholarshipList> => {
+
+  return customFetch<AdminScholarshipList>(getAdminListScholarshipsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListScholarshipsQueryKey = (params?: AdminListScholarshipsParams,) => {
+    return [
+    `/api/admin/scholarships`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListScholarshipsQueryOptions = <TData = Awaited<ReturnType<typeof adminListScholarships>>, TError = ErrorType<unknown>>(params?: AdminListScholarshipsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListScholarships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListScholarshipsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListScholarships>>> = ({ signal }) => adminListScholarships(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListScholarships>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListScholarshipsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListScholarships>>>
+export type AdminListScholarshipsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all scholarships regardless of status
+ */
+
+export function useAdminListScholarships<TData = Awaited<ReturnType<typeof adminListScholarships>>, TError = ErrorType<unknown>>(
+ params?: AdminListScholarshipsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListScholarships>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListScholarshipsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateScholarshipUrl = () => {
+
+
+
+
+  return `/api/admin/scholarships`
+}
+
+/**
+ * Requires at least one source with role "official". Duplicate detection rejects scholarships with the same title for the same provider.
+ * @summary Create a scholarship
+ */
+export const adminCreateScholarship = async (createScholarshipRequest: CreateScholarshipRequest, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipDetail> => {
+
+  return customFetch<ScholarshipDetail>(getAdminCreateScholarshipUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createScholarshipRequest)
+  }
+);}
+
+
+
+
+
+export const getAdminCreateScholarshipMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateScholarship>>, TError,{data: BodyType<CreateScholarshipRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateScholarship>>, TError,{data: BodyType<CreateScholarshipRequest>}, TContext> => {
+
+const mutationKey = ['adminCreateScholarship'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateScholarship>>, {data: BodyType<CreateScholarshipRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateScholarship(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateScholarshipMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateScholarship>>>
+    export type AdminCreateScholarshipMutationBody = BodyType<CreateScholarshipRequest>
+    export type AdminCreateScholarshipMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a scholarship
+ */
+export const useAdminCreateScholarship = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateScholarship>>, TError,{data: BodyType<CreateScholarshipRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateScholarship>>,
+        TError,
+        {data: BodyType<CreateScholarshipRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateScholarshipMutationOptions(options));
+    }
+
+export const getAdminGetScholarshipUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}`
+}
+
+/**
+ * @summary Get full scholarship detail for editing
+ */
+export const adminGetScholarship = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipDetail> => {
+
+  return customFetch<ScholarshipDetail>(getAdminGetScholarshipUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetScholarshipQueryKey = (id: number,) => {
+    return [
+    `/api/admin/scholarships/${id}`
+    ] as const;
+    }
+
+
+export const getAdminGetScholarshipQueryOptions = <TData = Awaited<ReturnType<typeof adminGetScholarship>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetScholarship>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetScholarshipQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetScholarship>>> = ({ signal }) => adminGetScholarship(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetScholarship>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetScholarshipQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetScholarship>>>
+export type AdminGetScholarshipQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get full scholarship detail for editing
+ */
+
+export function useAdminGetScholarship<TData = Awaited<ReturnType<typeof adminGetScholarship>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetScholarship>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetScholarshipQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateScholarshipUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}`
+}
+
+/**
+ * @summary Update scholarship fields
+ */
+export const adminUpdateScholarship = async (id: number,
+    updateScholarshipRequest: UpdateScholarshipRequest, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipDetail> => {
+
+  return customFetch<ScholarshipDetail>(getAdminUpdateScholarshipUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateScholarshipRequest)
+  }
+);}
+
+
+
+
+
+export const getAdminUpdateScholarshipMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateScholarship>>, TError,{id: number;data: BodyType<UpdateScholarshipRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateScholarship>>, TError,{id: number;data: BodyType<UpdateScholarshipRequest>}, TContext> => {
+
+const mutationKey = ['adminUpdateScholarship'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateScholarship>>, {id: number;data: BodyType<UpdateScholarshipRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateScholarship(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateScholarshipMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateScholarship>>>
+    export type AdminUpdateScholarshipMutationBody = BodyType<UpdateScholarshipRequest>
+    export type AdminUpdateScholarshipMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update scholarship fields
+ */
+export const useAdminUpdateScholarship = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateScholarship>>, TError,{id: number;data: BodyType<UpdateScholarshipRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateScholarship>>,
+        TError,
+        {id: number;data: BodyType<UpdateScholarshipRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateScholarshipMutationOptions(options));
+    }
+
+export const getAdminDeleteScholarshipUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}`
+}
+
+/**
+ * @summary Delete a scholarship
+ */
+export const adminDeleteScholarship = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteScholarshipUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminDeleteScholarshipMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteScholarship>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteScholarship>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteScholarship'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteScholarship>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteScholarship(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteScholarshipMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteScholarship>>>
+
+    export type AdminDeleteScholarshipMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a scholarship
+ */
+export const useAdminDeleteScholarship = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteScholarship>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteScholarship>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteScholarshipMutationOptions(options));
+    }
+
+export const getAdminVerifyScholarshipUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/verify`
+}
+
+/**
+ * Setting verificationStatus to "verified" requires the scholarship to have at least one source with role "official" already attached.
+ * @summary Mark a scholarship's verification status
+ */
+export const adminVerifyScholarship = async (id: number,
+    verifyScholarshipRequest: VerifyScholarshipRequest, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipDetail> => {
+
+  return customFetch<ScholarshipDetail>(getAdminVerifyScholarshipUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(verifyScholarshipRequest)
+  }
+);}
+
+
+
+
+
+export const getAdminVerifyScholarshipMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminVerifyScholarship>>, TError,{id: number;data: BodyType<VerifyScholarshipRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminVerifyScholarship>>, TError,{id: number;data: BodyType<VerifyScholarshipRequest>}, TContext> => {
+
+const mutationKey = ['adminVerifyScholarship'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminVerifyScholarship>>, {id: number;data: BodyType<VerifyScholarshipRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminVerifyScholarship(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminVerifyScholarshipMutationResult = NonNullable<Awaited<ReturnType<typeof adminVerifyScholarship>>>
+    export type AdminVerifyScholarshipMutationBody = BodyType<VerifyScholarshipRequest>
+    export type AdminVerifyScholarshipMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Mark a scholarship's verification status
+ */
+export const useAdminVerifyScholarship = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminVerifyScholarship>>, TError,{id: number;data: BodyType<VerifyScholarshipRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminVerifyScholarship>>,
+        TError,
+        {id: number;data: BodyType<VerifyScholarshipRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminVerifyScholarshipMutationOptions(options));
+    }
+
+export const getAdminSetScholarshipStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/status`
+}
+
+/**
+ * @summary Set scholarship active/inactive status
+ */
+export const adminSetScholarshipStatus = async (id: number,
+    setScholarshipStatusRequest: SetScholarshipStatusRequest, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipDetail> => {
+
+  return customFetch<ScholarshipDetail>(getAdminSetScholarshipStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setScholarshipStatusRequest)
+  }
+);}
+
+
+
+
+
+export const getAdminSetScholarshipStatusMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSetScholarshipStatus>>, TError,{id: number;data: BodyType<SetScholarshipStatusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSetScholarshipStatus>>, TError,{id: number;data: BodyType<SetScholarshipStatusRequest>}, TContext> => {
+
+const mutationKey = ['adminSetScholarshipStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSetScholarshipStatus>>, {id: number;data: BodyType<SetScholarshipStatusRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminSetScholarshipStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSetScholarshipStatusMutationResult = NonNullable<Awaited<ReturnType<typeof adminSetScholarshipStatus>>>
+    export type AdminSetScholarshipStatusMutationBody = BodyType<SetScholarshipStatusRequest>
+    export type AdminSetScholarshipStatusMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Set scholarship active/inactive status
+ */
+export const useAdminSetScholarshipStatus = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSetScholarshipStatus>>, TError,{id: number;data: BodyType<SetScholarshipStatusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSetScholarshipStatus>>,
+        TError,
+        {id: number;data: BodyType<SetScholarshipStatusRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminSetScholarshipStatusMutationOptions(options));
+    }
+
+export const getAdminAddScholarshipSourceUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/sources`
+}
+
+/**
+ * At most one "official" and one "application" role are allowed per scholarship; "information" allows multiple.
+ * @summary Add a source URL (official, information, or application role)
+ */
+export const adminAddScholarshipSource = async (id: number,
+    insertScholarshipSource: InsertScholarshipSource, options?: Parameters<typeof customFetch>[1]): Promise<ScholarshipSource> => {
+
+  return customFetch<ScholarshipSource>(getAdminAddScholarshipSourceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(insertScholarshipSource)
+  }
+);}
+
+
+
+
+
+export const getAdminAddScholarshipSourceMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddScholarshipSource>>, TError,{id: number;data: BodyType<InsertScholarshipSource>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddScholarshipSource>>, TError,{id: number;data: BodyType<InsertScholarshipSource>}, TContext> => {
+
+const mutationKey = ['adminAddScholarshipSource'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddScholarshipSource>>, {id: number;data: BodyType<InsertScholarshipSource>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminAddScholarshipSource(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddScholarshipSourceMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddScholarshipSource>>>
+    export type AdminAddScholarshipSourceMutationBody = BodyType<InsertScholarshipSource>
+    export type AdminAddScholarshipSourceMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a source URL (official, information, or application role)
+ */
+export const useAdminAddScholarshipSource = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddScholarshipSource>>, TError,{id: number;data: BodyType<InsertScholarshipSource>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddScholarshipSource>>,
+        TError,
+        {id: number;data: BodyType<InsertScholarshipSource>},
+        TContext
+      > => {
+      return useMutation(getAdminAddScholarshipSourceMutationOptions(options));
+    }
+
+export const getAdminDeleteScholarshipSourceUrl = (id: number,
+    sourceId: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/sources/${sourceId}`
+}
+
+/**
+ * @summary Remove a source from a scholarship
+ */
+export const adminDeleteScholarshipSource = async (id: number,
+    sourceId: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteScholarshipSourceUrl(id,sourceId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminDeleteScholarshipSourceMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteScholarshipSource>>, TError,{id: number;sourceId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteScholarshipSource>>, TError,{id: number;sourceId: number}, TContext> => {
+
+const mutationKey = ['adminDeleteScholarshipSource'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteScholarshipSource>>, {id: number;sourceId: number}> = (props) => {
+          const {id,sourceId} = props ?? {};
+
+          return  adminDeleteScholarshipSource(id,sourceId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteScholarshipSourceMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteScholarshipSource>>>
+
+    export type AdminDeleteScholarshipSourceMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Remove a source from a scholarship
+ */
+export const useAdminDeleteScholarshipSource = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteScholarshipSource>>, TError,{id: number;sourceId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteScholarshipSource>>,
+        TError,
+        {id: number;sourceId: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteScholarshipSourceMutationOptions(options));
+    }
+
+export const getAdminAddEligibilityCriteriaUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/eligibility-criteria`
+}
+
+/**
+ * @summary Add an eligibility criterion to a scholarship
+ */
+export const adminAddEligibilityCriteria = async (id: number,
+    insertEligibilityCriteria: InsertEligibilityCriteria, options?: Parameters<typeof customFetch>[1]): Promise<EligibilityCriteria> => {
+
+  return customFetch<EligibilityCriteria>(getAdminAddEligibilityCriteriaUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(insertEligibilityCriteria)
+  }
+);}
+
+
+
+
+
+export const getAdminAddEligibilityCriteriaMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddEligibilityCriteria>>, TError,{id: number;data: BodyType<InsertEligibilityCriteria>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddEligibilityCriteria>>, TError,{id: number;data: BodyType<InsertEligibilityCriteria>}, TContext> => {
+
+const mutationKey = ['adminAddEligibilityCriteria'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddEligibilityCriteria>>, {id: number;data: BodyType<InsertEligibilityCriteria>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminAddEligibilityCriteria(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddEligibilityCriteriaMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddEligibilityCriteria>>>
+    export type AdminAddEligibilityCriteriaMutationBody = BodyType<InsertEligibilityCriteria>
+    export type AdminAddEligibilityCriteriaMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add an eligibility criterion to a scholarship
+ */
+export const useAdminAddEligibilityCriteria = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddEligibilityCriteria>>, TError,{id: number;data: BodyType<InsertEligibilityCriteria>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddEligibilityCriteria>>,
+        TError,
+        {id: number;data: BodyType<InsertEligibilityCriteria>},
+        TContext
+      > => {
+      return useMutation(getAdminAddEligibilityCriteriaMutationOptions(options));
+    }
+
+export const getAdminDeleteEligibilityCriteriaUrl = (id: number,
+    criteriaId: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/eligibility-criteria/${criteriaId}`
+}
+
+/**
+ * @summary Remove an eligibility criterion
+ */
+export const adminDeleteEligibilityCriteria = async (id: number,
+    criteriaId: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteEligibilityCriteriaUrl(id,criteriaId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminDeleteEligibilityCriteriaMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteEligibilityCriteria>>, TError,{id: number;criteriaId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteEligibilityCriteria>>, TError,{id: number;criteriaId: number}, TContext> => {
+
+const mutationKey = ['adminDeleteEligibilityCriteria'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteEligibilityCriteria>>, {id: number;criteriaId: number}> = (props) => {
+          const {id,criteriaId} = props ?? {};
+
+          return  adminDeleteEligibilityCriteria(id,criteriaId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteEligibilityCriteriaMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteEligibilityCriteria>>>
+
+    export type AdminDeleteEligibilityCriteriaMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Remove an eligibility criterion
+ */
+export const useAdminDeleteEligibilityCriteria = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteEligibilityCriteria>>, TError,{id: number;criteriaId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteEligibilityCriteria>>,
+        TError,
+        {id: number;criteriaId: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteEligibilityCriteriaMutationOptions(options));
+    }
+
+export const getAdminAddRequiredDocumentUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/documents`
+}
+
+/**
+ * @summary Add a required document to a scholarship
+ */
+export const adminAddRequiredDocument = async (id: number,
+    insertRequiredDocument: InsertRequiredDocument, options?: Parameters<typeof customFetch>[1]): Promise<RequiredDocument> => {
+
+  return customFetch<RequiredDocument>(getAdminAddRequiredDocumentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(insertRequiredDocument)
+  }
+);}
+
+
+
+
+
+export const getAdminAddRequiredDocumentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddRequiredDocument>>, TError,{id: number;data: BodyType<InsertRequiredDocument>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddRequiredDocument>>, TError,{id: number;data: BodyType<InsertRequiredDocument>}, TContext> => {
+
+const mutationKey = ['adminAddRequiredDocument'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddRequiredDocument>>, {id: number;data: BodyType<InsertRequiredDocument>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminAddRequiredDocument(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddRequiredDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddRequiredDocument>>>
+    export type AdminAddRequiredDocumentMutationBody = BodyType<InsertRequiredDocument>
+    export type AdminAddRequiredDocumentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a required document to a scholarship
+ */
+export const useAdminAddRequiredDocument = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddRequiredDocument>>, TError,{id: number;data: BodyType<InsertRequiredDocument>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddRequiredDocument>>,
+        TError,
+        {id: number;data: BodyType<InsertRequiredDocument>},
+        TContext
+      > => {
+      return useMutation(getAdminAddRequiredDocumentMutationOptions(options));
+    }
+
+export const getAdminDeleteRequiredDocumentUrl = (id: number,
+    docId: number,) => {
+
+
+
+
+  return `/api/admin/scholarships/${id}/documents/${docId}`
+}
+
+/**
+ * @summary Remove a required document
+ */
+export const adminDeleteRequiredDocument = async (id: number,
+    docId: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteRequiredDocumentUrl(id,docId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminDeleteRequiredDocumentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteRequiredDocument>>, TError,{id: number;docId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteRequiredDocument>>, TError,{id: number;docId: number}, TContext> => {
+
+const mutationKey = ['adminDeleteRequiredDocument'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteRequiredDocument>>, {id: number;docId: number}> = (props) => {
+          const {id,docId} = props ?? {};
+
+          return  adminDeleteRequiredDocument(id,docId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteRequiredDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteRequiredDocument>>>
+
+    export type AdminDeleteRequiredDocumentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Remove a required document
+ */
+export const useAdminDeleteRequiredDocument = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteRequiredDocument>>, TError,{id: number;docId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteRequiredDocument>>,
+        TError,
+        {id: number;docId: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteRequiredDocumentMutationOptions(options));
+    }
 

@@ -11,7 +11,9 @@ tags:
   - name: health
     description: Health operations
   - name: scholarships
-    description: Scholarship catalogue operations
+    description: Public scholarship catalogue operations
+  - name: admin
+    description: Admin-only scholarship data management operations
 
 paths:
   /healthz:
@@ -28,12 +30,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  # ---------------------------------------------------------------------
+  # Public catalogue
+  # ---------------------------------------------------------------------
+
   /scholarships:
     get:
       operationId: listScholarships
       tags: [scholarships]
       summary: List scholarships
-      description: Returns a paginated list of scholarships with optional filters
+      description: Returns a paginated list of published, active scholarships with optional filters
       parameters:
         - name: search
           in: query
@@ -57,38 +63,22 @@ paths:
             type: string
             enum: [School, Diploma, UG, PG, PhD, Any]
           description: Filter by course level
-        - name: casteCategory
-          in: query
-          schema:
-            type: string
-            enum: [General, OBC, SC, ST, EWS, NT, SBC, VJNT, All]
-          description: Filter by caste category
         - name: gender
           in: query
           schema:
             type: string
-            enum: [any, male, female]
+            enum: [any, male, female, other]
           description: Filter by gender eligibility
-        - name: maxIncome
-          in: query
-          schema:
-            type: integer
-          description: Filter scholarships available for annual income up to this value (INR)
-        - name: isActive
-          in: query
-          schema:
-            type: boolean
-          description: Filter by active status (default true)
         - name: page
           in: query
           schema:
-            type: integer
+            type: number
             minimum: 1
             default: 1
         - name: limit
           in: query
           schema:
-            type: integer
+            type: number
             minimum: 1
             maximum: 50
             default: 12
@@ -124,14 +114,495 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: number
       responses:
         "200":
           description: Scholarship detail
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Scholarship"
+                $ref: "#/components/schemas/ScholarshipDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ---------------------------------------------------------------------
+  # Admin: providers
+  # ---------------------------------------------------------------------
+
+  /admin/providers:
+    get:
+      operationId: adminListProviders
+      tags: [admin]
+      summary: List all scholarship providers
+      responses:
+        "200":
+          description: Provider list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderList"
+    post:
+      operationId: adminCreateProvider
+      tags: [admin]
+      summary: Create a scholarship provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertProvider"
+      responses:
+        "201":
+          description: Provider created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate provider name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ---------------------------------------------------------------------
+  # Admin: categories
+  # ---------------------------------------------------------------------
+
+  /admin/categories:
+    get:
+      operationId: adminListCategories
+      tags: [admin]
+      summary: List all scholarship categories
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryList"
+    post:
+      operationId: adminCreateCategory
+      tags: [admin]
+      summary: Create a scholarship category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertCategory"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "409":
+          description: Duplicate category name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ---------------------------------------------------------------------
+  # Admin: scholarships (core CRUD)
+  # ---------------------------------------------------------------------
+
+  /admin/scholarships:
+    get:
+      operationId: adminListScholarships
+      tags: [admin]
+      summary: List all scholarships regardless of status
+      parameters:
+        - name: dataStatus
+          in: query
+          schema:
+            type: string
+            enum: [draft, pending_review, published, expired, archived]
+        - name: verificationStatus
+          in: query
+          schema:
+            type: string
+            enum: [unverified, verified, disputed, needs_update]
+      responses:
+        "200":
+          description: Admin scholarship list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminScholarshipList"
+    post:
+      operationId: adminCreateScholarship
+      tags: [admin]
+      summary: Create a scholarship
+      description: >
+        Requires at least one source with role "official". Duplicate
+        detection rejects scholarships with the same title for the same
+        provider.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScholarshipRequest"
+      responses:
+        "201":
+          description: Scholarship created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate scholarship
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}:
+    get:
+      operationId: adminGetScholarship
+      tags: [admin]
+      summary: Get full scholarship detail for editing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Scholarship detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: adminUpdateScholarship
+      tags: [admin]
+      summary: Update scholarship fields
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateScholarshipRequest"
+      responses:
+        "200":
+          description: Updated scholarship
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: adminDeleteScholarship
+      tags: [admin]
+      summary: Delete a scholarship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}/verify:
+    patch:
+      operationId: adminVerifyScholarship
+      tags: [admin]
+      summary: Mark a scholarship's verification status
+      description: >
+        Setting verificationStatus to "verified" requires the scholarship to
+        have at least one source with role "official" already attached.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyScholarshipRequest"
+      responses:
+        "200":
+          description: Updated scholarship
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipDetail"
+        "400":
+          description: Validation error (e.g. missing official source)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}/status:
+    patch:
+      operationId: adminSetScholarshipStatus
+      tags: [admin]
+      summary: Set scholarship active/inactive status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetScholarshipStatusRequest"
+      responses:
+        "200":
+          description: Updated scholarship
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ---------------------------------------------------------------------
+  # Admin: nested sub-resources
+  # ---------------------------------------------------------------------
+
+  /admin/scholarships/{id}/sources:
+    post:
+      operationId: adminAddScholarshipSource
+      tags: [admin]
+      summary: Add a source URL (official, information, or application role)
+      description: >
+        At most one "official" and one "application" role are allowed per
+        scholarship; "information" allows multiple.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertScholarshipSource"
+      responses:
+        "201":
+          description: Source added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScholarshipSource"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate source or role conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}/sources/{sourceId}:
+    delete:
+      operationId: adminDeleteScholarshipSource
+      tags: [admin]
+      summary: Remove a source from a scholarship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+        - name: sourceId
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}/eligibility-criteria:
+    post:
+      operationId: adminAddEligibilityCriteria
+      tags: [admin]
+      summary: Add an eligibility criterion to a scholarship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertEligibilityCriteria"
+      responses:
+        "201":
+          description: Criterion added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EligibilityCriteria"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}/eligibility-criteria/{criteriaId}:
+    delete:
+      operationId: adminDeleteEligibilityCriteria
+      tags: [admin]
+      summary: Remove an eligibility criterion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+        - name: criteriaId
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}/documents:
+    post:
+      operationId: adminAddRequiredDocument
+      tags: [admin]
+      summary: Add a required document to a scholarship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertRequiredDocument"
+      responses:
+        "201":
+          description: Document added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequiredDocument"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/scholarships/{id}/documents/{docId}:
+    delete:
+      operationId: adminDeleteRequiredDocument
+      tags: [admin]
+      summary: Remove a required document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
         "404":
           description: Not found
           content:
@@ -157,78 +628,381 @@ components:
       required:
         - error
 
-    Scholarship:
+    # -------------------------------------------------------------------
+    # Providers
+    # -------------------------------------------------------------------
+
+    Provider:
       type: object
       required:
         - id
-        - title
-        - providerName
+        - name
         - providerType
-        - description
-        - sourceName
-        - sourceUrl
-        - applicationUrl
-        - isActive
-        - state
-        - courseLevel
-        - casteCategories
-        - gender
         - createdAt
         - updatedAt
       properties:
         id:
           type: number
-          description: Scholarship ID
-        title:
+        name:
           type: string
+        providerType:
+          type: string
+          enum: [govt, ngo, private, university]
+        websiteUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    InsertProvider:
+      type: object
+      required:
+        - name
+        - providerType
+      properties:
+        name:
+          type: string
+          minLength: 2
+        providerType:
+          type: string
+          enum: [govt, ngo, private, university]
+        websiteUrl:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+
+    ProviderList:
+      type: object
+      required:
+        - providers
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Provider"
+
+    # -------------------------------------------------------------------
+    # Categories
+    # -------------------------------------------------------------------
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        icon:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    InsertCategory:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 2
+        description:
+          type: string
+        icon:
+          type: string
+
+    CategoryList:
+      type: object
+      required:
+        - categories
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+
+    # -------------------------------------------------------------------
+    # Eligibility criteria / documents / sources
+    # -------------------------------------------------------------------
+
+    EligibilityCriteria:
+      type: object
+      required:
+        - id
+        - scholarshipId
+        - criteriaType
+        - operator
+        - value
+        - isMandatory
+      properties:
+        id:
+          type: number
+        scholarshipId:
+          type: number
+        criteriaType:
+          type: string
+          enum:
+            [
+              caste_category,
+              gender,
+              max_income,
+              min_percentage,
+              course_level,
+              state,
+              age_limit,
+              disability,
+              minority,
+              custom,
+            ]
+        operator:
+          type: string
+          enum: [equals, not_equals, lte, gte, in, between]
+        value:
+          type: string
+        isMandatory:
+          type: boolean
+        displayOrder:
+          type: number
+
+    InsertEligibilityCriteria:
+      type: object
+      required:
+        - criteriaType
+        - operator
+        - value
+      properties:
+        criteriaType:
+          type: string
+          enum:
+            [
+              caste_category,
+              gender,
+              max_income,
+              min_percentage,
+              course_level,
+              state,
+              age_limit,
+              disability,
+              minority,
+              custom,
+            ]
+        operator:
+          type: string
+          enum: [equals, not_equals, lte, gte, in, between]
+        value:
+          type: string
+          minLength: 1
+        isMandatory:
+          type: boolean
+          default: true
+        displayOrder:
+          type: number
+          default: 0
+
+    RequiredDocument:
+      type: object
+      required:
+        - id
+        - scholarshipId
+        - documentName
+        - isMandatory
+      properties:
+        id:
+          type: number
+        scholarshipId:
+          type: number
+        documentName:
+          type: string
+        documentDescription:
+          type: ["string", "null"]
+        isMandatory:
+          type: boolean
+        displayOrder:
+          type: number
+
+    InsertRequiredDocument:
+      type: object
+      required:
+        - documentName
+      properties:
+        documentName:
+          type: string
+          minLength: 2
+        documentDescription:
+          type: string
+        isMandatory:
+          type: boolean
+          default: true
+        displayOrder:
+          type: number
+          default: 0
+
+    ScholarshipSource:
+      type: object
+      required:
+        - id
+        - scholarshipId
+        - sourceName
+        - sourceUrl
+        - sourceType
+        - sourceRole
+      properties:
+        id:
+          type: number
+        scholarshipId:
+          type: number
+        sourceName:
+          type: string
+        sourceUrl:
+          type: string
+        sourceType:
+          type: string
+          enum: [official_government, institutional, ngo_direct, aggregator]
+        sourceRole:
+          type: string
+          enum: [official, information, application]
+        lastCheckedAt:
+          type: ["string", "null"]
+
+    InsertScholarshipSource:
+      type: object
+      required:
+        - sourceName
+        - sourceUrl
+        - sourceType
+        - sourceRole
+      properties:
+        sourceName:
+          type: string
+          minLength: 2
+        sourceUrl:
+          type: string
+          pattern: "^https?://"
+        sourceType:
+          type: string
+          enum: [official_government, institutional, ngo_direct, aggregator]
+        sourceRole:
+          type: string
+          enum: [official, information, application]
+
+    # -------------------------------------------------------------------
+    # Scholarships
+    # -------------------------------------------------------------------
+
+    Scholarship:
+      type: object
+      required:
+        - id
+        - providerId
+        - providerName
+        - providerType
+        - title
+        - slug
+        - description
+        - eligibilitySummary
+        - frequency
+        - applicationMethod
+        - applicationUrl
+        - status
+        - state
+        - courseLevel
+        - genderEligibility
+        - lastVerifiedDate
+        - dataStatus
+        - verificationStatus
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: number
+        providerId:
+          type: number
         providerName:
           type: string
         providerType:
           type: string
           enum: [govt, ngo, private, university]
+        title:
+          type: string
+        slug:
+          type: string
         description:
           type: string
-        amount:
+        eligibilitySummary:
+          type: string
+        amountMin:
           type: ["number", "null"]
-          description: Award amount in INR (null if varies)
+        amountMax:
+          type: ["number", "null"]
         frequency:
+          type: string
+          enum: [one_time, annual, monthly]
+        coverageType:
           type: ["string", "null"]
-          enum: [one-time, monthly, annual, null]
-        sourceName:
+        applicationMethod:
           type: string
-        sourceUrl:
-          type: string
+          enum: [online_portal, offline_form, email, in_person]
         applicationUrl:
           type: string
         deadline:
           type: ["string", "null"]
-          description: Application deadline in YYYY-MM-DD format
-        isActive:
-          type: boolean
+        status:
+          type: string
+          enum: [draft, active, expired, closed, archived]
         state:
           type: string
-          description: State this scholarship targets, or "National"
         courseLevel:
           type: string
           enum: [School, Diploma, UG, PG, PhD, Any]
-        casteCategories:
-          type: array
-          items:
-            type: string
-          description: Eligible caste categories
-        gender:
+        genderEligibility:
           type: string
-          enum: [any, male, female]
-        maxAnnualIncome:
-          type: ["number", "null"]
-          description: Maximum annual family income in INR (null if no income limit)
-        minPercentage:
-          type: ["number", "null"]
-          description: Minimum academic percentage required (null if not applicable)
+          enum: [any, male, female, other]
+        lastVerifiedDate:
+          type: string
+        dataStatus:
+          type: string
+          enum: [draft, pending_review, published, expired, archived]
+        verificationStatus:
+          type: string
+          enum: [unverified, verified, disputed, needs_update]
         createdAt:
           type: string
         updatedAt:
           type: string
+
+    ScholarshipDetail:
+      allOf:
+        - $ref: "#/components/schemas/Scholarship"
+        - type: object
+          required:
+            - eligibilityCriteria
+            - requiredDocuments
+            - sources
+          properties:
+            eligibilityCriteria:
+              type: array
+              items:
+                $ref: "#/components/schemas/EligibilityCriteria"
+            requiredDocuments:
+              type: array
+              items:
+                $ref: "#/components/schemas/RequiredDocument"
+            sources:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScholarshipSource"
 
     ScholarshipList:
       type: object
@@ -248,6 +1022,164 @@ components:
           type: number
         limit:
           type: number
+
+    AdminScholarshipList:
+      type: object
+      required:
+        - scholarships
+        - total
+      properties:
+        scholarships:
+          type: array
+          items:
+            $ref: "#/components/schemas/Scholarship"
+        total:
+          type: number
+
+    CreateScholarshipRequest:
+      type: object
+      required:
+        - providerId
+        - title
+        - description
+        - eligibilitySummary
+        - frequency
+        - applicationMethod
+        - applicationUrl
+        - lastVerifiedDate
+        - sources
+      properties:
+        providerId:
+          type: number
+        title:
+          type: string
+          minLength: 5
+        description:
+          type: string
+          minLength: 20
+        eligibilitySummary:
+          type: string
+          minLength: 5
+          maxLength: 280
+        amountMin:
+          type: number
+          minimum: 0
+        amountMax:
+          type: number
+          minimum: 0
+        frequency:
+          type: string
+          enum: [one_time, annual, monthly]
+        coverageType:
+          type: string
+        applicationMethod:
+          type: string
+          enum: [online_portal, offline_form, email, in_person]
+        applicationUrl:
+          type: string
+          pattern: "^https?://"
+        deadline:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        state:
+          type: string
+          default: National
+        courseLevel:
+          type: string
+          enum: [School, Diploma, UG, PG, PhD, Any]
+          default: Any
+        genderEligibility:
+          type: string
+          enum: [any, male, female, other]
+          default: any
+        lastVerifiedDate:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        sources:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/InsertScholarshipSource"
+        eligibilityCriteria:
+          type: array
+          items:
+            $ref: "#/components/schemas/InsertEligibilityCriteria"
+        requiredDocuments:
+          type: array
+          items:
+            $ref: "#/components/schemas/InsertRequiredDocument"
+
+    UpdateScholarshipRequest:
+      type: object
+      properties:
+        providerId:
+          type: number
+        title:
+          type: string
+          minLength: 5
+        description:
+          type: string
+          minLength: 20
+        eligibilitySummary:
+          type: string
+          minLength: 5
+          maxLength: 280
+        amountMin:
+          type: number
+          minimum: 0
+        amountMax:
+          type: number
+          minimum: 0
+        frequency:
+          type: string
+          enum: [one_time, annual, monthly]
+        coverageType:
+          type: string
+        applicationMethod:
+          type: string
+          enum: [online_portal, offline_form, email, in_person]
+        applicationUrl:
+          type: string
+          pattern: "^https?://"
+        deadline:
+          type: ["string", "null"]
+          pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        state:
+          type: string
+        courseLevel:
+          type: string
+          enum: [School, Diploma, UG, PG, PhD, Any]
+        genderEligibility:
+          type: string
+          enum: [any, male, female, other]
+        lastVerifiedDate:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+
+    VerifyScholarshipRequest:
+      type: object
+      required:
+        - verificationStatus
+      properties:
+        verificationStatus:
+          type: string
+          enum: [unverified, verified, disputed, needs_update]
+        lastVerifiedDate:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+
+    SetScholarshipStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [draft, active, expired, closed, archived]
+
+    # -------------------------------------------------------------------
+    # Stats
+    # -------------------------------------------------------------------
 
     ScholarshipStats:
       type: object

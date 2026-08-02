@@ -13,6 +13,225 @@ export interface ErrorResponse {
   error: string;
 }
 
+export type ProviderProviderType = typeof ProviderProviderType[keyof typeof ProviderProviderType];
+
+
+export const ProviderProviderType = {
+  govt: 'govt',
+  ngo: 'ngo',
+  private: 'private',
+  university: 'university',
+} as const;
+
+export interface Provider {
+  id: number;
+  name: string;
+  providerType: ProviderProviderType;
+  /** @nullable */
+  websiteUrl?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type InsertProviderProviderType = typeof InsertProviderProviderType[keyof typeof InsertProviderProviderType];
+
+
+export const InsertProviderProviderType = {
+  govt: 'govt',
+  ngo: 'ngo',
+  private: 'private',
+  university: 'university',
+} as const;
+
+export interface InsertProvider {
+  /** @minLength 2 */
+  name: string;
+  providerType: InsertProviderProviderType;
+  websiteUrl?: string;
+  description?: string;
+  logoUrl?: string;
+}
+
+export interface ProviderList {
+  providers: Provider[];
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  icon?: string | null;
+  createdAt: string;
+}
+
+export interface InsertCategory {
+  /** @minLength 2 */
+  name: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface CategoryList {
+  categories: Category[];
+}
+
+export type EligibilityCriteriaCriteriaType = typeof EligibilityCriteriaCriteriaType[keyof typeof EligibilityCriteriaCriteriaType];
+
+
+export const EligibilityCriteriaCriteriaType = {
+  caste_category: 'caste_category',
+  gender: 'gender',
+  max_income: 'max_income',
+  min_percentage: 'min_percentage',
+  course_level: 'course_level',
+  state: 'state',
+  age_limit: 'age_limit',
+  disability: 'disability',
+  minority: 'minority',
+  custom: 'custom',
+} as const;
+
+export type EligibilityCriteriaOperator = typeof EligibilityCriteriaOperator[keyof typeof EligibilityCriteriaOperator];
+
+
+export const EligibilityCriteriaOperator = {
+  equals: 'equals',
+  not_equals: 'not_equals',
+  lte: 'lte',
+  gte: 'gte',
+  in: 'in',
+  between: 'between',
+} as const;
+
+export interface EligibilityCriteria {
+  id: number;
+  scholarshipId: number;
+  criteriaType: EligibilityCriteriaCriteriaType;
+  operator: EligibilityCriteriaOperator;
+  value: string;
+  isMandatory: boolean;
+  displayOrder?: number;
+}
+
+export type InsertEligibilityCriteriaCriteriaType = typeof InsertEligibilityCriteriaCriteriaType[keyof typeof InsertEligibilityCriteriaCriteriaType];
+
+
+export const InsertEligibilityCriteriaCriteriaType = {
+  caste_category: 'caste_category',
+  gender: 'gender',
+  max_income: 'max_income',
+  min_percentage: 'min_percentage',
+  course_level: 'course_level',
+  state: 'state',
+  age_limit: 'age_limit',
+  disability: 'disability',
+  minority: 'minority',
+  custom: 'custom',
+} as const;
+
+export type InsertEligibilityCriteriaOperator = typeof InsertEligibilityCriteriaOperator[keyof typeof InsertEligibilityCriteriaOperator];
+
+
+export const InsertEligibilityCriteriaOperator = {
+  equals: 'equals',
+  not_equals: 'not_equals',
+  lte: 'lte',
+  gte: 'gte',
+  in: 'in',
+  between: 'between',
+} as const;
+
+export interface InsertEligibilityCriteria {
+  criteriaType: InsertEligibilityCriteriaCriteriaType;
+  operator: InsertEligibilityCriteriaOperator;
+  /** @minLength 1 */
+  value: string;
+  isMandatory?: boolean;
+  displayOrder?: number;
+}
+
+export interface RequiredDocument {
+  id: number;
+  scholarshipId: number;
+  documentName: string;
+  /** @nullable */
+  documentDescription?: string | null;
+  isMandatory: boolean;
+  displayOrder?: number;
+}
+
+export interface InsertRequiredDocument {
+  /** @minLength 2 */
+  documentName: string;
+  documentDescription?: string;
+  isMandatory?: boolean;
+  displayOrder?: number;
+}
+
+export type ScholarshipSourceSourceType = typeof ScholarshipSourceSourceType[keyof typeof ScholarshipSourceSourceType];
+
+
+export const ScholarshipSourceSourceType = {
+  official_government: 'official_government',
+  institutional: 'institutional',
+  ngo_direct: 'ngo_direct',
+  aggregator: 'aggregator',
+} as const;
+
+export type ScholarshipSourceSourceRole = typeof ScholarshipSourceSourceRole[keyof typeof ScholarshipSourceSourceRole];
+
+
+export const ScholarshipSourceSourceRole = {
+  official: 'official',
+  information: 'information',
+  application: 'application',
+} as const;
+
+export interface ScholarshipSource {
+  id: number;
+  scholarshipId: number;
+  sourceName: string;
+  sourceUrl: string;
+  sourceType: ScholarshipSourceSourceType;
+  sourceRole: ScholarshipSourceSourceRole;
+  /** @nullable */
+  lastCheckedAt?: string | null;
+}
+
+export type InsertScholarshipSourceSourceType = typeof InsertScholarshipSourceSourceType[keyof typeof InsertScholarshipSourceSourceType];
+
+
+export const InsertScholarshipSourceSourceType = {
+  official_government: 'official_government',
+  institutional: 'institutional',
+  ngo_direct: 'ngo_direct',
+  aggregator: 'aggregator',
+} as const;
+
+export type InsertScholarshipSourceSourceRole = typeof InsertScholarshipSourceSourceRole[keyof typeof InsertScholarshipSourceSourceRole];
+
+
+export const InsertScholarshipSourceSourceRole = {
+  official: 'official',
+  information: 'information',
+  application: 'application',
+} as const;
+
+export interface InsertScholarshipSource {
+  /** @minLength 2 */
+  sourceName: string;
+  /** @pattern ^https?:// */
+  sourceUrl: string;
+  sourceType: InsertScholarshipSourceSourceType;
+  sourceRole: InsertScholarshipSourceSourceRole;
+}
+
 export type ScholarshipProviderType = typeof ScholarshipProviderType[keyof typeof ScholarshipProviderType];
 
 
@@ -23,16 +242,34 @@ export const ScholarshipProviderType = {
   university: 'university',
 } as const;
 
-/**
- * @nullable
- */
-export type ScholarshipFrequency = typeof ScholarshipFrequency[keyof typeof ScholarshipFrequency] | null;
+export type ScholarshipFrequency = typeof ScholarshipFrequency[keyof typeof ScholarshipFrequency];
 
 
 export const ScholarshipFrequency = {
-  'one-time': 'one-time',
-  monthly: 'monthly',
+  one_time: 'one_time',
   annual: 'annual',
+  monthly: 'monthly',
+} as const;
+
+export type ScholarshipApplicationMethod = typeof ScholarshipApplicationMethod[keyof typeof ScholarshipApplicationMethod];
+
+
+export const ScholarshipApplicationMethod = {
+  online_portal: 'online_portal',
+  offline_form: 'offline_form',
+  email: 'email',
+  in_person: 'in_person',
+} as const;
+
+export type ScholarshipStatus = typeof ScholarshipStatus[keyof typeof ScholarshipStatus];
+
+
+export const ScholarshipStatus = {
+  draft: 'draft',
+  active: 'active',
+  expired: 'expired',
+  closed: 'closed',
+  archived: 'archived',
 } as const;
 
 export type ScholarshipCourseLevel = typeof ScholarshipCourseLevel[keyof typeof ScholarshipCourseLevel];
@@ -47,63 +284,262 @@ export const ScholarshipCourseLevel = {
   Any: 'Any',
 } as const;
 
-export type ScholarshipGender = typeof ScholarshipGender[keyof typeof ScholarshipGender];
+export type ScholarshipGenderEligibility = typeof ScholarshipGenderEligibility[keyof typeof ScholarshipGenderEligibility];
 
 
-export const ScholarshipGender = {
+export const ScholarshipGenderEligibility = {
   any: 'any',
   male: 'male',
   female: 'female',
+  other: 'other',
+} as const;
+
+export type ScholarshipDataStatus = typeof ScholarshipDataStatus[keyof typeof ScholarshipDataStatus];
+
+
+export const ScholarshipDataStatus = {
+  draft: 'draft',
+  pending_review: 'pending_review',
+  published: 'published',
+  expired: 'expired',
+  archived: 'archived',
+} as const;
+
+export type ScholarshipVerificationStatus = typeof ScholarshipVerificationStatus[keyof typeof ScholarshipVerificationStatus];
+
+
+export const ScholarshipVerificationStatus = {
+  unverified: 'unverified',
+  verified: 'verified',
+  disputed: 'disputed',
+  needs_update: 'needs_update',
 } as const;
 
 export interface Scholarship {
-  /** Scholarship ID */
   id: number;
-  title: string;
+  providerId: number;
   providerName: string;
   providerType: ScholarshipProviderType;
+  title: string;
+  slug: string;
   description: string;
-  /**
-     * Award amount in INR (null if varies)
-     * @nullable
-     */
-  amount?: number | null;
+  eligibilitySummary: string;
   /** @nullable */
-  frequency?: ScholarshipFrequency;
-  sourceName: string;
-  sourceUrl: string;
+  amountMin?: number | null;
+  /** @nullable */
+  amountMax?: number | null;
+  frequency: ScholarshipFrequency;
+  /** @nullable */
+  coverageType?: string | null;
+  applicationMethod: ScholarshipApplicationMethod;
   applicationUrl: string;
-  /**
-     * Application deadline in YYYY-MM-DD format
-     * @nullable
-     */
+  /** @nullable */
   deadline?: string | null;
-  isActive: boolean;
-  /** State this scholarship targets, or "National" */
+  status: ScholarshipStatus;
   state: string;
   courseLevel: ScholarshipCourseLevel;
-  /** Eligible caste categories */
-  casteCategories: string[];
-  gender: ScholarshipGender;
-  /**
-     * Maximum annual family income in INR (null if no income limit)
-     * @nullable
-     */
-  maxAnnualIncome?: number | null;
-  /**
-     * Minimum academic percentage required (null if not applicable)
-     * @nullable
-     */
-  minPercentage?: number | null;
+  genderEligibility: ScholarshipGenderEligibility;
+  lastVerifiedDate: string;
+  dataStatus: ScholarshipDataStatus;
+  verificationStatus: ScholarshipVerificationStatus;
   createdAt: string;
   updatedAt: string;
 }
+
+export type ScholarshipDetail = Scholarship & {
+  eligibilityCriteria: EligibilityCriteria[];
+  requiredDocuments: RequiredDocument[];
+  sources: ScholarshipSource[];
+};
 
 export interface ScholarshipList {
   scholarships: Scholarship[];
   total: number;
   page: number;
   limit: number;
+}
+
+export interface AdminScholarshipList {
+  scholarships: Scholarship[];
+  total: number;
+}
+
+export type CreateScholarshipRequestFrequency = typeof CreateScholarshipRequestFrequency[keyof typeof CreateScholarshipRequestFrequency];
+
+
+export const CreateScholarshipRequestFrequency = {
+  one_time: 'one_time',
+  annual: 'annual',
+  monthly: 'monthly',
+} as const;
+
+export type CreateScholarshipRequestApplicationMethod = typeof CreateScholarshipRequestApplicationMethod[keyof typeof CreateScholarshipRequestApplicationMethod];
+
+
+export const CreateScholarshipRequestApplicationMethod = {
+  online_portal: 'online_portal',
+  offline_form: 'offline_form',
+  email: 'email',
+  in_person: 'in_person',
+} as const;
+
+export type CreateScholarshipRequestCourseLevel = typeof CreateScholarshipRequestCourseLevel[keyof typeof CreateScholarshipRequestCourseLevel];
+
+
+export const CreateScholarshipRequestCourseLevel = {
+  School: 'School',
+  Diploma: 'Diploma',
+  UG: 'UG',
+  PG: 'PG',
+  PhD: 'PhD',
+  Any: 'Any',
+} as const;
+
+export type CreateScholarshipRequestGenderEligibility = typeof CreateScholarshipRequestGenderEligibility[keyof typeof CreateScholarshipRequestGenderEligibility];
+
+
+export const CreateScholarshipRequestGenderEligibility = {
+  any: 'any',
+  male: 'male',
+  female: 'female',
+  other: 'other',
+} as const;
+
+export interface CreateScholarshipRequest {
+  providerId: number;
+  /** @minLength 5 */
+  title: string;
+  /** @minLength 20 */
+  description: string;
+  /**
+     * @minLength 5
+     * @maxLength 280
+     */
+  eligibilitySummary: string;
+  /** @minimum 0 */
+  amountMin?: number;
+  /** @minimum 0 */
+  amountMax?: number;
+  frequency: CreateScholarshipRequestFrequency;
+  coverageType?: string;
+  applicationMethod: CreateScholarshipRequestApplicationMethod;
+  /** @pattern ^https?:// */
+  applicationUrl: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  deadline?: string;
+  state?: string;
+  courseLevel?: CreateScholarshipRequestCourseLevel;
+  genderEligibility?: CreateScholarshipRequestGenderEligibility;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  lastVerifiedDate: string;
+  /** @minItems 1 */
+  sources: InsertScholarshipSource[];
+  eligibilityCriteria?: InsertEligibilityCriteria[];
+  requiredDocuments?: InsertRequiredDocument[];
+}
+
+export type UpdateScholarshipRequestFrequency = typeof UpdateScholarshipRequestFrequency[keyof typeof UpdateScholarshipRequestFrequency];
+
+
+export const UpdateScholarshipRequestFrequency = {
+  one_time: 'one_time',
+  annual: 'annual',
+  monthly: 'monthly',
+} as const;
+
+export type UpdateScholarshipRequestApplicationMethod = typeof UpdateScholarshipRequestApplicationMethod[keyof typeof UpdateScholarshipRequestApplicationMethod];
+
+
+export const UpdateScholarshipRequestApplicationMethod = {
+  online_portal: 'online_portal',
+  offline_form: 'offline_form',
+  email: 'email',
+  in_person: 'in_person',
+} as const;
+
+export type UpdateScholarshipRequestCourseLevel = typeof UpdateScholarshipRequestCourseLevel[keyof typeof UpdateScholarshipRequestCourseLevel];
+
+
+export const UpdateScholarshipRequestCourseLevel = {
+  School: 'School',
+  Diploma: 'Diploma',
+  UG: 'UG',
+  PG: 'PG',
+  PhD: 'PhD',
+  Any: 'Any',
+} as const;
+
+export type UpdateScholarshipRequestGenderEligibility = typeof UpdateScholarshipRequestGenderEligibility[keyof typeof UpdateScholarshipRequestGenderEligibility];
+
+
+export const UpdateScholarshipRequestGenderEligibility = {
+  any: 'any',
+  male: 'male',
+  female: 'female',
+  other: 'other',
+} as const;
+
+export interface UpdateScholarshipRequest {
+  providerId?: number;
+  /** @minLength 5 */
+  title?: string;
+  /** @minLength 20 */
+  description?: string;
+  /**
+     * @minLength 5
+     * @maxLength 280
+     */
+  eligibilitySummary?: string;
+  /** @minimum 0 */
+  amountMin?: number;
+  /** @minimum 0 */
+  amountMax?: number;
+  frequency?: UpdateScholarshipRequestFrequency;
+  coverageType?: string;
+  applicationMethod?: UpdateScholarshipRequestApplicationMethod;
+  /** @pattern ^https?:// */
+  applicationUrl?: string;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  deadline?: string | null;
+  state?: string;
+  courseLevel?: UpdateScholarshipRequestCourseLevel;
+  genderEligibility?: UpdateScholarshipRequestGenderEligibility;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  lastVerifiedDate?: string;
+}
+
+export type VerifyScholarshipRequestVerificationStatus = typeof VerifyScholarshipRequestVerificationStatus[keyof typeof VerifyScholarshipRequestVerificationStatus];
+
+
+export const VerifyScholarshipRequestVerificationStatus = {
+  unverified: 'unverified',
+  verified: 'verified',
+  disputed: 'disputed',
+  needs_update: 'needs_update',
+} as const;
+
+export interface VerifyScholarshipRequest {
+  verificationStatus: VerifyScholarshipRequestVerificationStatus;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  lastVerifiedDate?: string;
+}
+
+export type SetScholarshipStatusRequestStatus = typeof SetScholarshipStatusRequestStatus[keyof typeof SetScholarshipStatusRequestStatus];
+
+
+export const SetScholarshipStatusRequestStatus = {
+  draft: 'draft',
+  active: 'active',
+  expired: 'expired',
+  closed: 'closed',
+  archived: 'archived',
+} as const;
+
+export interface SetScholarshipStatusRequest {
+  status: SetScholarshipStatusRequestStatus;
 }
 
 export interface ProviderTypeStat {
@@ -141,21 +577,9 @@ providerType?: ListScholarshipsProviderType;
  */
 courseLevel?: ListScholarshipsCourseLevel;
 /**
- * Filter by caste category
- */
-casteCategory?: ListScholarshipsCasteCategory;
-/**
  * Filter by gender eligibility
  */
 gender?: ListScholarshipsGender;
-/**
- * Filter scholarships available for annual income up to this value (INR)
- */
-maxIncome?: number;
-/**
- * Filter by active status (default true)
- */
-isActive?: boolean;
 /**
  * @minimum 1
  */
@@ -189,21 +613,6 @@ export const ListScholarshipsCourseLevel = {
   Any: 'Any',
 } as const;
 
-export type ListScholarshipsCasteCategory = typeof ListScholarshipsCasteCategory[keyof typeof ListScholarshipsCasteCategory];
-
-
-export const ListScholarshipsCasteCategory = {
-  General: 'General',
-  OBC: 'OBC',
-  SC: 'SC',
-  ST: 'ST',
-  EWS: 'EWS',
-  NT: 'NT',
-  SBC: 'SBC',
-  VJNT: 'VJNT',
-  All: 'All',
-} as const;
-
 export type ListScholarshipsGender = typeof ListScholarshipsGender[keyof typeof ListScholarshipsGender];
 
 
@@ -211,5 +620,32 @@ export const ListScholarshipsGender = {
   any: 'any',
   male: 'male',
   female: 'female',
+  other: 'other',
+} as const;
+
+export type AdminListScholarshipsParams = {
+dataStatus?: AdminListScholarshipsDataStatus;
+verificationStatus?: AdminListScholarshipsVerificationStatus;
+};
+
+export type AdminListScholarshipsDataStatus = typeof AdminListScholarshipsDataStatus[keyof typeof AdminListScholarshipsDataStatus];
+
+
+export const AdminListScholarshipsDataStatus = {
+  draft: 'draft',
+  pending_review: 'pending_review',
+  published: 'published',
+  expired: 'expired',
+  archived: 'archived',
+} as const;
+
+export type AdminListScholarshipsVerificationStatus = typeof AdminListScholarshipsVerificationStatus[keyof typeof AdminListScholarshipsVerificationStatus];
+
+
+export const AdminListScholarshipsVerificationStatus = {
+  unverified: 'unverified',
+  verified: 'verified',
+  disputed: 'disputed',
+  needs_update: 'needs_update',
 } as const;
 

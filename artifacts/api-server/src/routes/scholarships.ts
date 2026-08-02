@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
-import { ilike, and, eq, lte, or, sql } from "drizzle-orm";
-import { db, scholarshipsTable } from "@workspace/db";
+import { ilike, and, eq, or } from "drizzle-orm";
+import {
+  db,
+  scholarshipsTable,
+  scholarshipProvidersTable,
+  scholarshipSourcesTable,
+  eligibilityCriteriaTable,
+  requiredDocumentsTable,
+} from "@workspace/db";
 import {
   ListScholarshipsQueryParams,
   GetScholarshipParams,
@@ -11,35 +18,34 @@ import {
 
 const router: IRouter = Router();
 
-/** Parse the comma-separated casteCategories string into an array */
-function parseCasteCategories(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-/** Map a DB row to the API response shape */
-function toScholarshipResponse(row: typeof scholarshipsTable.$inferSelect) {
+/** Map a DB row + its provider to the public API response shape */
+function toScholarshipResponse(
+  row: typeof scholarshipsTable.$inferSelect,
+  provider: typeof scholarshipProvidersTable.$inferSelect,
+) {
   return {
     id: row.id,
+    providerId: row.providerId,
+    providerName: provider.name,
+    providerType: provider.providerType,
     title: row.title,
-    providerName: row.providerName,
-    providerType: row.providerType,
+    slug: row.slug,
     description: row.description,
-    amount: row.amount ?? null,
-    frequency: row.frequency ?? null,
-    sourceName: row.sourceName,
-    sourceUrl: row.sourceUrl,
+    eligibilitySummary: row.eligibilitySummary,
+    amountMin: row.amountMin ?? null,
+    amountMax: row.amountMax ?? null,
+    frequency: row.frequency,
+    coverageType: row.coverageType ?? null,
+    applicationMethod: row.applicationMethod,
     applicationUrl: row.applicationUrl,
     deadline: row.deadline ?? null,
-    isActive: row.isActive,
+    status: row.status,
     state: row.state,
     courseLevel: row.courseLevel,
-    casteCategories: parseCasteCategories(row.casteCategories),
-    gender: row.gender,
-    maxAnnualIncome: row.maxAnnualIncome ?? null,
-    minPercentage: row.minPercentage ?? null,
+    genderEligibility: row.genderEligibility,
+    lastVerifiedDate: row.lastVerifiedDate,
+    dataStatus: row.dataStatus,
+    verificationStatus: row.verificationStatus,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -50,7 +56,9 @@ router.get("/scholarships/stats", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(scholarshipsTable)
-    .where(eq(scholarshipsTable.isActive, true));
+    .where(eq(scholarshipsTable.status, "active"));
+  const providers = await db.select().from(scholarshipProvidersTable);
+  const providerMap = new Map(providers.map((p) => [p.id, p]));
 
   const totalScholarships = rows.length;
   const stateSet = new Set(rows.map((r) => r.state));
@@ -60,10 +68,8 @@ router.get("/scholarships/stats", async (req, res): Promise<void> => {
   const courseLevelMap = new Map<string, number>();
 
   for (const row of rows) {
-    providerTypeMap.set(
-      row.providerType,
-      (providerTypeMap.get(row.providerType) ?? 0) + 1,
-    );
+    const providerType = providerMap.get(row.providerId)?.providerType ?? "unknown";
+    providerTypeMap.set(providerType, (providerTypeMap.get(providerType) ?? 0) + 1);
     courseLevelMap.set(
       row.courseLevel,
       (courseLevelMap.get(row.courseLevel) ?? 0) + 1,
@@ -95,32 +101,17 @@ router.get("/scholarships", async (req, res): Promise<void> => {
     return;
   }
 
-  const {
-    search,
-    state,
-    providerType,
-    courseLevel,
-    casteCategory,
-    gender,
-    maxIncome,
-    isActive,
-    page,
-    limit,
-  } = parsed.data;
+  const { search, state, providerType, courseLevel, gender, page, limit } =
+    parsed.data;
 
-  const conditions = [];
-
-  // Default: only active scholarships unless explicitly overridden
-  const activeFilter = isActive !== undefined ? isActive : true;
-  conditions.push(eq(scholarshipsTable.isActive, activeFilter));
+  const conditions = [eq(scholarshipsTable.status, "active")];
 
   if (search) {
     conditions.push(
       or(
         ilike(scholarshipsTable.title, `%${search}%`),
         ilike(scholarshipsTable.description, `%${search}%`),
-        ilike(scholarshipsTable.providerName, `%${search}%`),
-      ),
+      )!,
     );
   }
 
@@ -129,12 +120,8 @@ router.get("/scholarships", async (req, res): Promise<void> => {
       or(
         eq(scholarshipsTable.state, state),
         eq(scholarshipsTable.state, "National"),
-      ),
+      )!,
     );
-  }
-
-  if (providerType) {
-    conditions.push(eq(scholarshipsTable.providerType, providerType));
   }
 
   if (courseLevel) {
@@ -142,29 +129,20 @@ router.get("/scholarships", async (req, res): Promise<void> => {
       or(
         eq(scholarshipsTable.courseLevel, courseLevel),
         eq(scholarshipsTable.courseLevel, "Any"),
-      ),
+      )!,
     );
   }
 
   if (gender && gender !== "any") {
     conditions.push(
       or(
-        eq(scholarshipsTable.gender, gender),
-        eq(scholarshipsTable.gender, "any"),
-      ),
+        eq(scholarshipsTable.genderEligibility, gender),
+        eq(scholarshipsTable.genderEligibility, "any"),
+      )!,
     );
   }
 
-  if (maxIncome !== undefined) {
-    conditions.push(
-      or(
-        sql`${scholarshipsTable.maxAnnualIncome} IS NULL`,
-        lte(scholarshipsTable.maxAnnualIncome, maxIncome),
-      ),
-    );
-  }
-
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const where = and(...conditions);
 
   const allRows = await db
     .select()
@@ -172,14 +150,13 @@ router.get("/scholarships", async (req, res): Promise<void> => {
     .where(where)
     .orderBy(scholarshipsTable.createdAt);
 
-  // In-memory caste filter (stored as CSV, hard to SQL-filter cleanly)
-  const filtered =
-    casteCategory
-      ? allRows.filter((r) => {
-          const cats = parseCasteCategories(r.casteCategories);
-          return cats.includes("All") || cats.includes(casteCategory);
-        })
-      : allRows;
+  const providers = await db.select().from(scholarshipProvidersTable);
+  const providerMap = new Map(providers.map((p) => [p.id, p]));
+
+  // In-memory providerType filter (requires join, simplest done in memory here)
+  const filtered = providerType
+    ? allRows.filter((r) => providerMap.get(r.providerId)?.providerType === providerType)
+    : allRows;
 
   const total = filtered.length;
   const offset = (page - 1) * limit;
@@ -187,7 +164,13 @@ router.get("/scholarships", async (req, res): Promise<void> => {
 
   res.json(
     ListScholarshipsResponse.parse({
-      scholarships: pageRows.map(toScholarshipResponse),
+      scholarships: pageRows
+        .map((row) => {
+          const provider = providerMap.get(row.providerId);
+          if (!provider) return null;
+          return toScholarshipResponse(row, provider);
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null),
       total,
       page,
       limit,
@@ -214,7 +197,61 @@ router.get("/scholarships/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetScholarshipResponse.parse(toScholarshipResponse(row)));
+  const [provider] = await db
+    .select()
+    .from(scholarshipProvidersTable)
+    .where(eq(scholarshipProvidersTable.id, row.providerId));
+  if (!provider) {
+    res.status(404).json({ error: "Scholarship not found" });
+    return;
+  }
+
+  const [sources, eligibilityCriteria, requiredDocuments] = await Promise.all([
+    db
+      .select()
+      .from(scholarshipSourcesTable)
+      .where(eq(scholarshipSourcesTable.scholarshipId, row.id)),
+    db
+      .select()
+      .from(eligibilityCriteriaTable)
+      .where(eq(eligibilityCriteriaTable.scholarshipId, row.id)),
+    db
+      .select()
+      .from(requiredDocumentsTable)
+      .where(eq(requiredDocumentsTable.scholarshipId, row.id)),
+  ]);
+
+  res.json(
+    GetScholarshipResponse.parse({
+      ...toScholarshipResponse(row, provider),
+      sources: sources.map((s) => ({
+        id: s.id,
+        scholarshipId: s.scholarshipId,
+        sourceName: s.sourceName,
+        sourceUrl: s.sourceUrl,
+        sourceType: s.sourceType,
+        sourceRole: s.sourceRole,
+        lastCheckedAt: s.lastCheckedAt ? s.lastCheckedAt.toISOString() : null,
+      })),
+      eligibilityCriteria: eligibilityCriteria.map((c) => ({
+        id: c.id,
+        scholarshipId: c.scholarshipId,
+        criteriaType: c.criteriaType,
+        operator: c.operator,
+        value: c.value,
+        isMandatory: c.isMandatory,
+        displayOrder: c.displayOrder,
+      })),
+      requiredDocuments: requiredDocuments.map((d) => ({
+        id: d.id,
+        scholarshipId: d.scholarshipId,
+        documentName: d.documentName,
+        documentDescription: d.documentDescription ?? null,
+        isMandatory: d.isMandatory,
+        displayOrder: d.displayOrder,
+      })),
+    }),
+  );
 });
 
 export default router;

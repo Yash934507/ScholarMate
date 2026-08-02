@@ -20,6 +20,8 @@ import AboutScholarMate from '@/pages/about';
 import Contact from '@/pages/contact';
 import PrivacyPolicy from '@/pages/privacy-policy';
 import TermsOfUse from '@/pages/terms-of-use';
+import AdminScholarshipsList from '@/pages/admin/scholarships-list';
+import AdminScholarshipForm from '@/pages/admin/scholarship-form';
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,9 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/privacy" component={PrivacyPolicy} />
         <Route path="/terms" component={TermsOfUse} />
+        <Route path="/admin/scholarships/new" component={AdminScholarshipForm} />
+        <Route path="/admin/scholarships/:id/edit" component={AdminScholarshipForm} />
+        <Route path="/admin/scholarships" component={AdminScholarshipsList} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

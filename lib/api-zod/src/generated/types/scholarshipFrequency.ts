@@ -6,14 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type ScholarshipFrequency = typeof ScholarshipFrequency[keyof typeof ScholarshipFrequency] | null;
+export type ScholarshipFrequency = typeof ScholarshipFrequency[keyof typeof ScholarshipFrequency];
 
 
 export const ScholarshipFrequency = {
-  'one-time': 'one-time',
-  monthly: 'monthly',
+  one_time: 'one_time',
   annual: 'annual',
+  monthly: 'monthly',
 } as const;

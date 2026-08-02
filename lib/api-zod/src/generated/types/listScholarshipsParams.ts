@@ -5,7 +5,6 @@
  * ScholarMate API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { ListScholarshipsCasteCategory } from './listScholarshipsCasteCategory';
 import type { ListScholarshipsCourseLevel } from './listScholarshipsCourseLevel';
 import type { ListScholarshipsGender } from './listScholarshipsGender';
 import type { ListScholarshipsProviderType } from './listScholarshipsProviderType';
@@ -28,21 +27,9 @@ providerType?: ListScholarshipsProviderType;
  */
 courseLevel?: ListScholarshipsCourseLevel;
 /**
- * Filter by caste category
- */
-casteCategory?: ListScholarshipsCasteCategory;
-/**
  * Filter by gender eligibility
  */
 gender?: ListScholarshipsGender;
-/**
- * Filter scholarships available for annual income up to this value (INR)
- */
-maxIncome?: number;
-/**
- * Filter by active status (default true)
- */
-isActive?: boolean;
 /**
  * @minimum 1
  */
