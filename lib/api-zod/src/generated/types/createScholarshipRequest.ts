@@ -37,9 +37,11 @@ export interface CreateScholarshipRequest {
   deadline?: string;
   state?: string;
   courseLevel?: CreateScholarshipRequestCourseLevel;
+  courseStream?: string;
   genderEligibility?: CreateScholarshipRequestGenderEligibility;
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
   lastVerifiedDate: string;
+  categoryIds?: number[];
   /** @minItems 1 */
   sources: InsertScholarshipSource[];
   eligibilityCriteria?: InsertEligibilityCriteria[];

@@ -5,6 +5,7 @@
  * ScholarMate API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { Category } from './category';
 import type { ScholarshipApplicationMethod } from './scholarshipApplicationMethod';
 import type { ScholarshipCourseLevel } from './scholarshipCourseLevel';
 import type { ScholarshipDataStatus } from './scholarshipDataStatus';
@@ -37,10 +38,16 @@ export interface Scholarship {
   status: ScholarshipStatus;
   state: string;
   courseLevel: ScholarshipCourseLevel;
+  courseStream: string;
   genderEligibility: ScholarshipGenderEligibility;
   lastVerifiedDate: string;
   dataStatus: ScholarshipDataStatus;
   verificationStatus: ScholarshipVerificationStatus;
+  categories: Category[];
+  /** @nullable */
+  primarySourceName: string | null;
+  /** @nullable */
+  primarySourceUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

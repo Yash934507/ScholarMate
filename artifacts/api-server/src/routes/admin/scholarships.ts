@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   scholarshipsTable,
@@ -7,6 +7,8 @@ import {
   scholarshipSourcesTable,
   eligibilityCriteriaTable,
   requiredDocumentsTable,
+  scholarshipCategoriesTable,
+  scholarshipCategoryLinksTable,
 } from "@workspace/db";
 import {
   AdminCreateScholarshipBody,
@@ -34,6 +36,8 @@ function slugify(title: string): string {
 function toScholarshipResponse(
   row: typeof scholarshipsTable.$inferSelect,
   provider: typeof scholarshipProvidersTable.$inferSelect,
+  categories: { id: number; name: string; description: string | null; icon: string | null; createdAt: string }[] = [],
+  primarySource: { name: string; url: string } | null = null,
 ) {
   return {
     id: row.id,
@@ -54,13 +58,55 @@ function toScholarshipResponse(
     status: row.status,
     state: row.state,
     courseLevel: row.courseLevel,
+    courseStream: row.courseStream,
     genderEligibility: row.genderEligibility,
     lastVerifiedDate: row.lastVerifiedDate,
     dataStatus: row.dataStatus,
     verificationStatus: row.verificationStatus,
+    categories,
+    primarySourceName: primarySource?.name ?? null,
+    primarySourceUrl: primarySource?.url ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+/** Fetch category rows linked to a single scholarship. */
+async function getCategoriesFor(scholarshipId: number) {
+  const rows = await db
+    .select({
+      id: scholarshipCategoriesTable.id,
+      name: scholarshipCategoriesTable.name,
+      description: scholarshipCategoriesTable.description,
+      icon: scholarshipCategoriesTable.icon,
+      createdAt: scholarshipCategoriesTable.createdAt,
+    })
+    .from(scholarshipCategoryLinksTable)
+    .innerJoin(
+      scholarshipCategoriesTable,
+      eq(scholarshipCategoryLinksTable.categoryId, scholarshipCategoriesTable.id),
+    )
+    .where(eq(scholarshipCategoryLinksTable.scholarshipId, scholarshipId));
+  return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+}
+
+/** Pick the best "primary" source to surface on cards: official > application > information. */
+function pickPrimarySource(sources: (typeof scholarshipSourcesTable.$inferSelect)[]) {
+  const byRole = (role: string) => sources.find((s) => s.sourceRole === role);
+  const chosen = byRole("official") ?? byRole("application") ?? sources[0];
+  return chosen ? { name: chosen.sourceName, url: chosen.sourceUrl } : null;
+}
+
+/** Replace all category links for a scholarship with the given set of category IDs. */
+async function setScholarshipCategories(scholarshipId: number, categoryIds: number[]) {
+  await db
+    .delete(scholarshipCategoryLinksTable)
+    .where(eq(scholarshipCategoryLinksTable.scholarshipId, scholarshipId));
+  if (categoryIds.length > 0) {
+    await db
+      .insert(scholarshipCategoryLinksTable)
+      .values(categoryIds.map((categoryId) => ({ scholarshipId, categoryId })));
+  }
 }
 
 function toSourceResponse(row: typeof scholarshipSourcesTable.$inferSelect) {
@@ -128,8 +174,10 @@ async function loadScholarshipDetail(id: number) {
       .where(eq(requiredDocumentsTable.scholarshipId, id)),
   ]);
 
+  const categories = await getCategoriesFor(id);
+
   return {
-    ...toScholarshipResponse(row, provider),
+    ...toScholarshipResponse(row, provider, categories, pickPrimarySource(sources)),
     sources: sources.map(toSourceResponse),
     eligibilityCriteria: eligibilityCriteria.map(toCriteriaResponse),
     requiredDocuments: requiredDocuments.map(toDocumentResponse),
@@ -183,11 +231,59 @@ router.get("/admin/scholarships", async (req, res): Promise<void> => {
   const providers = await db.select().from(scholarshipProvidersTable);
   const providerMap = new Map(providers.map((p) => [p.id, p]));
 
+  const ids = rows.map((r) => r.id);
+  const [categoryLinkRows, sourceRows] = await Promise.all([
+    ids.length > 0
+      ? db
+          .select({
+            scholarshipId: scholarshipCategoryLinksTable.scholarshipId,
+            id: scholarshipCategoriesTable.id,
+            name: scholarshipCategoriesTable.name,
+            description: scholarshipCategoriesTable.description,
+            icon: scholarshipCategoriesTable.icon,
+            createdAt: scholarshipCategoriesTable.createdAt,
+          })
+          .from(scholarshipCategoryLinksTable)
+          .innerJoin(
+            scholarshipCategoriesTable,
+            eq(scholarshipCategoryLinksTable.categoryId, scholarshipCategoriesTable.id),
+          )
+          .where(inArray(scholarshipCategoryLinksTable.scholarshipId, ids))
+      : Promise.resolve([]),
+    ids.length > 0
+      ? db
+          .select()
+          .from(scholarshipSourcesTable)
+          .where(inArray(scholarshipSourcesTable.scholarshipId, ids))
+      : Promise.resolve([]),
+  ]);
+
+  const categoriesByScholarship = new Map<
+    number,
+    { id: number; name: string; description: string | null; icon: string | null; createdAt: string }[]
+  >();
+  for (const r of categoryLinkRows) {
+    const list = categoriesByScholarship.get(r.scholarshipId) ?? [];
+    list.push({ id: r.id, name: r.name, description: r.description, icon: r.icon, createdAt: r.createdAt.toISOString() });
+    categoriesByScholarship.set(r.scholarshipId, list);
+  }
+  const sourcesByScholarship = new Map<number, typeof sourceRows>();
+  for (const s of sourceRows) {
+    const list = sourcesByScholarship.get(s.scholarshipId) ?? [];
+    list.push(s);
+    sourcesByScholarship.set(s.scholarshipId, list);
+  }
+
   const scholarships = rows
     .map((row) => {
       const provider = providerMap.get(row.providerId);
       if (!provider) return null;
-      return toScholarshipResponse(row, provider);
+      return toScholarshipResponse(
+        row,
+        provider,
+        categoriesByScholarship.get(row.id) ?? [],
+        pickPrimarySource(sourcesByScholarship.get(row.id) ?? []),
+      );
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
 
@@ -278,10 +374,15 @@ router.post("/admin/scholarships", async (req, res): Promise<void> => {
       deadline: body.deadline,
       state: body.state,
       courseLevel: body.courseLevel,
+      courseStream: body.courseStream,
       genderEligibility: body.genderEligibility,
       lastVerifiedDate: body.lastVerifiedDate,
     })
     .returning();
+
+  if (body.categoryIds && body.categoryIds.length > 0) {
+    await setScholarshipCategories(row.id, body.categoryIds);
+  }
 
   await db.insert(scholarshipSourcesTable).values(
     body.sources.map((s) => ({
@@ -370,10 +471,18 @@ router.patch("/admin/scholarships/:id", async (req, res): Promise<void> => {
     }
   }
 
-  await db
-    .update(scholarshipsTable)
-    .set(parsed.data)
-    .where(eq(scholarshipsTable.id, params.data.id));
+  const { categoryIds, ...scalarUpdates } = parsed.data;
+
+  if (Object.keys(scalarUpdates).length > 0) {
+    await db
+      .update(scholarshipsTable)
+      .set(scalarUpdates)
+      .where(eq(scholarshipsTable.id, params.data.id));
+  }
+
+  if (categoryIds !== undefined) {
+    await setScholarshipCategories(params.data.id, categoryIds);
+  }
 
   const detail = await loadScholarshipDetail(params.data.id);
   res.json(detail);

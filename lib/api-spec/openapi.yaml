@@ -45,12 +45,22 @@ paths:
           in: query
           schema:
             type: string
-          description: Full-text search across title and description
+          description: Keyword search across title, description, eligibility summary, and provider name
+        - name: categoryId
+          in: query
+          schema:
+            type: number
+          description: Filter by category
         - name: state
           in: query
           schema:
             type: string
           description: Filter by state (e.g. Maharashtra, National)
+        - name: providerId
+          in: query
+          schema:
+            type: number
+          description: Filter by a specific provider
         - name: providerType
           in: query
           schema:
@@ -62,13 +72,45 @@ paths:
           schema:
             type: string
             enum: [School, Diploma, UG, PG, PhD, Any]
-          description: Filter by course level
+          description: Filter by education level
+        - name: courseStream
+          in: query
+          schema:
+            type: string
+          description: Filter by specific course/stream (e.g. B.Tech, MBBS)
         - name: gender
           in: query
           schema:
             type: string
             enum: [any, male, female, other]
           description: Filter by gender eligibility
+        - name: maxFamilyIncome
+          in: query
+          schema:
+            type: number
+            minimum: 0
+          description: Student's annual family income (INR); returns scholarships with no income cap or a cap at or above this value
+        - name: academicPercentage
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 100
+          description: Student's academic percentage; returns scholarships with no minimum or a minimum at or below this value
+        - name: deadlineWithinDays
+          in: query
+          schema:
+            type: number
+            minimum: 1
+            maximum: 3650
+          description: Only include scholarships whose deadline falls within this many days from today (e.g. 7, 30, 90, 365)
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [relevance, deadline_asc, amount_desc, newest]
+            default: newest
+          description: Sort order for results
         - name: page
           in: query
           schema:
@@ -89,6 +131,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScholarshipList"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [scholarships]
+      summary: List scholarship categories
+      description: Returns all scholarship categories, for use in discovery filters
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryList"
+
+  /providers:
+    get:
+      operationId: listProviders
+      tags: [scholarships]
+      summary: List scholarship providers
+      description: Returns all scholarship providers, for use in discovery filters
+      responses:
+        "200":
+          description: Provider list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderList"
 
   /scholarships/stats:
     get:
@@ -918,10 +988,14 @@ components:
         - status
         - state
         - courseLevel
+        - courseStream
         - genderEligibility
         - lastVerifiedDate
         - dataStatus
         - verificationStatus
+        - categories
+        - primarySourceName
+        - primarySourceUrl
         - createdAt
         - updatedAt
       properties:
@@ -966,6 +1040,8 @@ components:
         courseLevel:
           type: string
           enum: [School, Diploma, UG, PG, PhD, Any]
+        courseStream:
+          type: string
         genderEligibility:
           type: string
           enum: [any, male, female, other]
@@ -977,6 +1053,14 @@ components:
         verificationStatus:
           type: string
           enum: [unverified, verified, disputed, needs_update]
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        primarySourceName:
+          type: ["string", "null"]
+        primarySourceUrl:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -1088,6 +1172,9 @@ components:
           type: string
           enum: [School, Diploma, UG, PG, PhD, Any]
           default: Any
+        courseStream:
+          type: string
+          default: Any
         genderEligibility:
           type: string
           enum: [any, male, female, other]
@@ -1095,6 +1182,10 @@ components:
         lastVerifiedDate:
           type: string
           pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        categoryIds:
+          type: array
+          items:
+            type: number
         sources:
           type: array
           minItems: 1
@@ -1149,12 +1240,18 @@ components:
         courseLevel:
           type: string
           enum: [School, Diploma, UG, PG, PhD, Any]
+        courseStream:
+          type: string
         genderEligibility:
           type: string
           enum: [any, male, female, other]
         lastVerifiedDate:
           type: string
           pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        categoryIds:
+          type: array
+          items:
+            type: number
 
     VerifyScholarshipRequest:
       type: object

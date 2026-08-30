@@ -21,6 +21,14 @@ export const HealthCheckResponse = zod.object({
  * Returns a paginated list of published, active scholarships with optional filters
  * @summary List scholarships
  */
+export const listScholarshipsQueryMaxFamilyIncomeMin = 0;
+
+export const listScholarshipsQueryAcademicPercentageMin = 0;
+export const listScholarshipsQueryAcademicPercentageMax = 100;
+
+export const listScholarshipsQueryDeadlineWithinDaysMax = 3650;
+
+export const listScholarshipsQuerySortByDefault = `newest`;
 export const listScholarshipsQueryPageDefault = 1;
 
 export const listScholarshipsQueryLimitDefault = 12;
@@ -29,11 +37,18 @@ export const listScholarshipsQueryLimitMax = 50;
 
 
 export const ListScholarshipsQueryParams = zod.object({
-  "search": zod.coerce.string().optional().describe('Full-text search across title and description'),
+  "search": zod.coerce.string().optional().describe('Keyword search across title, description, eligibility summary, and provider name'),
+  "categoryId": zod.coerce.number().optional().describe('Filter by category'),
   "state": zod.coerce.string().optional().describe('Filter by state (e.g. Maharashtra, National)'),
+  "providerId": zod.coerce.number().optional().describe('Filter by a specific provider'),
   "providerType": zod.enum(['govt', 'ngo', 'private', 'university']).optional().describe('Filter by provider type'),
-  "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']).optional().describe('Filter by course level'),
+  "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']).optional().describe('Filter by education level'),
+  "courseStream": zod.coerce.string().optional().describe('Filter by specific course\/stream (e.g. B.Tech, MBBS)'),
   "gender": zod.enum(['any', 'male', 'female', 'other']).optional().describe('Filter by gender eligibility'),
+  "maxFamilyIncome": zod.coerce.number().min(listScholarshipsQueryMaxFamilyIncomeMin).optional().describe('Student\'s annual family income (INR); returns scholarships with no income cap or a cap at or above this value'),
+  "academicPercentage": zod.coerce.number().min(listScholarshipsQueryAcademicPercentageMin).max(listScholarshipsQueryAcademicPercentageMax).optional().describe('Student\'s academic percentage; returns scholarships with no minimum or a minimum at or below this value'),
+  "deadlineWithinDays": zod.coerce.number().min(1).max(listScholarshipsQueryDeadlineWithinDaysMax).optional().describe('Only include scholarships whose deadline falls within this many days from today (e.g. 7, 30, 90, 365)'),
+  "sortBy": zod.enum(['relevance', 'deadline_asc', 'amount_desc', 'newest']).default(listScholarshipsQuerySortByDefault).describe('Sort order for results'),
   "page": zod.coerce.number().min(1).default(listScholarshipsQueryPageDefault),
   "limit": zod.coerce.number().min(1).max(listScholarshipsQueryLimitMax).default(listScholarshipsQueryLimitDefault)
 })
@@ -58,16 +73,59 @@ export const ListScholarshipsResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })),
   "total": zod.number(),
   "page": zod.number(),
   "limit": zod.number()
+})
+
+
+/**
+ * Returns all scholarship categories, for use in discovery filters
+ * @summary List scholarship categories
+ */
+export const ListCategoriesResponse = zod.object({
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * Returns all scholarship providers, for use in discovery filters
+ * @summary List scholarship providers
+ */
+export const ListProvidersResponse = zod.object({
+  "providers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "providerType": zod.enum(['govt', 'ngo', 'private', 'university']),
+  "websiteUrl": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}))
 })
 
 
@@ -115,10 +173,20 @@ export const GetScholarshipResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({
@@ -259,10 +327,20 @@ export const AdminListScholarshipsResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })),
@@ -289,6 +367,7 @@ export const adminCreateScholarshipBodyApplicationUrlRegExp = new RegExp('^https
 export const adminCreateScholarshipBodyDeadlineRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const adminCreateScholarshipBodyStateDefault = `National`;
 export const adminCreateScholarshipBodyCourseLevelDefault = `Any`;
+export const adminCreateScholarshipBodyCourseStreamDefault = `Any`;
 export const adminCreateScholarshipBodyGenderEligibilityDefault = `any`;
 export const adminCreateScholarshipBodyLastVerifiedDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const adminCreateScholarshipBodySourcesItemSourceNameMin = 2;
@@ -317,8 +396,10 @@ export const AdminCreateScholarshipBody = zod.object({
   "deadline": zod.string().regex(adminCreateScholarshipBodyDeadlineRegExp).optional(),
   "state": zod.string().default(adminCreateScholarshipBodyStateDefault),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']).default(adminCreateScholarshipBodyCourseLevelDefault),
+  "courseStream": zod.string().default(adminCreateScholarshipBodyCourseStreamDefault),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']).default(adminCreateScholarshipBodyGenderEligibilityDefault),
   "lastVerifiedDate": zod.string().regex(adminCreateScholarshipBodyLastVerifiedDateRegExp),
+  "categoryIds": zod.array(zod.number()).optional(),
   "sources": zod.array(zod.object({
   "sourceName": zod.string().min(adminCreateScholarshipBodySourcesItemSourceNameMin),
   "sourceUrl": zod.string().regex(adminCreateScholarshipBodySourcesItemSourceUrlRegExp),
@@ -359,10 +440,20 @@ export const AdminCreateScholarshipResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({
@@ -421,10 +512,20 @@ export const AdminGetScholarshipResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({
@@ -494,8 +595,10 @@ export const AdminUpdateScholarshipBody = zod.object({
   "deadline": zod.string().regex(adminUpdateScholarshipBodyDeadlineRegExp).nullish(),
   "state": zod.string().optional(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']).optional(),
+  "courseStream": zod.string().optional(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']).optional(),
-  "lastVerifiedDate": zod.string().regex(adminUpdateScholarshipBodyLastVerifiedDateRegExp).optional()
+  "lastVerifiedDate": zod.string().regex(adminUpdateScholarshipBodyLastVerifiedDateRegExp).optional(),
+  "categoryIds": zod.array(zod.number()).optional()
 })
 
 export const AdminUpdateScholarshipResponse = zod.object({
@@ -517,10 +620,20 @@ export const AdminUpdateScholarshipResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({
@@ -598,10 +711,20 @@ export const AdminVerifyScholarshipResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({
@@ -664,10 +787,20 @@ export const AdminSetScholarshipStatusResponse = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'closed', 'archived']),
   "state": zod.string(),
   "courseLevel": zod.enum(['School', 'Diploma', 'UG', 'PG', 'PhD', 'Any']),
+  "courseStream": zod.string(),
   "genderEligibility": zod.enum(['any', 'male', 'female', 'other']),
   "lastVerifiedDate": zod.string(),
   "dataStatus": zod.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
   "verificationStatus": zod.enum(['unverified', 'verified', 'disputed', 'needs_update']),
+  "categories": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "primarySourceName": zod.string().nullable(),
+  "primarySourceUrl": zod.string().nullable(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({

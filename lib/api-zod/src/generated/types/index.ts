@@ -37,6 +37,7 @@ export * from './listScholarshipsCourseLevel';
 export * from './listScholarshipsGender';
 export * from './listScholarshipsParams';
 export * from './listScholarshipsProviderType';
+export * from './listScholarshipsSortBy';
 export * from './provider';
 export * from './providerList';
 export * from './providerProviderType';

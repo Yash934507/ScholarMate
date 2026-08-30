@@ -37,7 +37,9 @@ export interface UpdateScholarshipRequest {
   deadline?: string | null;
   state?: string;
   courseLevel?: UpdateScholarshipRequestCourseLevel;
+  courseStream?: string;
   genderEligibility?: UpdateScholarshipRequestGenderEligibility;
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
   lastVerifiedDate?: string;
+  categoryIds?: number[];
 }

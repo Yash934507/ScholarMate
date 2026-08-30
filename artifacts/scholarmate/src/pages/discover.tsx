@@ -1,240 +1,237 @@
-import { useEffect, useState, useMemo } from "react"
-import { useSearch, useLocation } from "wouter"
+import { useEffect, useMemo, useState } from "react"
+import { useLocation, useSearch } from "wouter"
+import { Filter, Search as SearchIcon, SlidersHorizontal, X } from "lucide-react"
+import {
+  useListCategories,
+  useListProviders,
+  useListScholarships,
+  type ListScholarshipsParams,
+} from "@workspace/api-client-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { NativeSelect } from "@/components/ui/native-select"
-import { Filter, X, Search as SearchIcon } from "lucide-react"
-
-import { mockScholarships } from "@/lib/mock-data"
-import { ScholarshipCard } from "@/components/scholarship-card"
 import { SearchBar } from "@/components/search-bar"
-import { FilterPanel } from "@/components/filter-panel"
+import { FilterPanel, type FilterState } from "@/components/filter-panel"
 import { LoadingGrid } from "@/components/loading-state"
 import { EmptyState } from "@/components/empty-state"
 import { ErrorState } from "@/components/error-state"
+import { DiscoveryScholarshipCard } from "@/components/discovery-scholarship-card"
 
-function formatProviderType(type: string) {
-  switch(type) {
-    case 'govt': return 'Government';
-    case 'university': return 'University/College';
-    case 'ngo': return 'NGO';
-    case 'private': return 'Private';
-    default: return type;
+const PAGE_SIZE = 6
+
+const emptyFilters: FilterState = {
+  state: "",
+  courseLevel: "",
+  courseStream: "",
+  categoryId: "",
+  providerId: "",
+  maxFamilyIncome: "",
+  academicPercentage: "",
+  deadlineWithinDays: "",
+}
+
+function readFilters(params: URLSearchParams): FilterState {
+  return {
+    state: params.get("state") ?? "",
+    courseLevel: params.get("courseLevel") ?? "",
+    courseStream: params.get("courseStream") ?? "",
+    categoryId: params.get("categoryId") ?? "",
+    providerId: params.get("providerId") ?? "",
+    maxFamilyIncome: params.get("maxFamilyIncome") ?? "",
+    academicPercentage: params.get("academicPercentage") ?? "",
+    deadlineWithinDays: params.get("deadlineWithinDays") ?? "",
   }
 }
 
+function toNumber(value: string) {
+  return value.trim() ? Number(value) : undefined
+}
+
+function formatProviderType(type: string) {
+  return { govt: "Government", ngo: "NGO", private: "Private", university: "University" }[type] ?? type
+}
+
 export default function Discover() {
-  const searchParams = useSearch()
+  const searchString = useSearch()
   const [, setLocation] = useLocation()
-  
-  const params = useMemo(() => new URLSearchParams(searchParams), [searchParams])
-  
-  const currentParams = {
-    search: params.get("search") || "",
-    state: params.get("state") || "",
-    providerType: params.get("providerType") || "",
-    courseLevel: params.get("courseLevel") || "",
-    casteCategory: params.get("casteCategory") || "",
-    gender: params.get("gender") || "",
-    maxIncome: params.get("maxIncome") || "",
-    page: parseInt(params.get("page") || "1"),
-  }
-  
-  const simulateError = params.get("simulateError") === "true";
+  const params = useMemo(() => new URLSearchParams(searchString), [searchString])
+  const filters = useMemo(() => readFilters(params), [params])
+  const search = params.get("search") ?? ""
+  const sortBy = (params.get("sortBy") as ListScholarshipsParams["sortBy"]) ?? "newest"
+  const page = Math.max(1, Number(params.get("page") ?? "1"))
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  const [filters, setFilters] = useState(currentParams)
-  const [isLoading, setIsLoading] = useState(true)
+  const categoriesQuery = useListCategories()
+  const providersQuery = useListProviders()
+  const scholarshipsQuery = useListScholarships({
+    search: search || undefined,
+    categoryId: toNumber(filters.categoryId),
+    state: filters.state || undefined,
+    providerId: toNumber(filters.providerId),
+    courseLevel: (filters.courseLevel || undefined) as ListScholarshipsParams["courseLevel"],
+    courseStream: filters.courseStream || undefined,
+    maxFamilyIncome: toNumber(filters.maxFamilyIncome),
+    academicPercentage: toNumber(filters.academicPercentage),
+    deadlineWithinDays: toNumber(filters.deadlineWithinDays),
+    sortBy,
+    page,
+    limit: PAGE_SIZE,
+  })
 
-  // synchronize local state when URL changes
   useEffect(() => {
-    setFilters(currentParams)
-    setIsLoading(true)
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [searchParams])
+    document.title = "Discover Scholarships | ScholarMate"
+    const description = "Search and filter verified scholarships by category, state, education level, course, income, percentage, deadline, and provider."
+    let meta = document.querySelector('meta[name="description"]')
+    if (!meta) {
+      meta = document.createElement("meta")
+      meta.setAttribute("name", "description")
+      document.head.appendChild(meta)
+    }
+    meta.setAttribute("content", description)
+  }, [])
 
-  const applyFilters = (newFilters: Partial<typeof currentParams>) => {
-    const updated = { ...filters, ...newFilters, page: 1 } 
-    setFilters(updated)
-    
-    const p = new URLSearchParams()
-    Object.entries(updated).forEach(([k, v]) => {
-      if (v) p.set(k, String(v))
+  function updateUrl(next: Partial<FilterState> & { search?: string; sortBy?: string; page?: number }) {
+    const nextParams = new URLSearchParams()
+    const nextFilters = { ...filters, ...next }
+    const nextSearch = next.search ?? search
+    Object.entries(nextFilters).forEach(([key, value]) => {
+      if (value) nextParams.set(key, String(value))
     })
-    setLocation(`/discover?${p.toString()}`)
+    if (nextSearch) nextParams.set("search", nextSearch)
+    if (next.sortBy && next.sortBy !== "newest") nextParams.set("sortBy", next.sortBy)
+    const nextPage = next.page ?? 1
+    if (nextPage > 1) nextParams.set("page", String(nextPage))
+    setLocation(`/discover?${nextParams.toString()}`)
   }
 
-  const clearFilters = () => {
-    setFilters({ ...currentParams, search: "", state: "", providerType: "", courseLevel: "", casteCategory: "", gender: "", maxIncome: "", page: 1 })
+  function clearFilters() {
     setLocation("/discover")
   }
 
-  const handlePageChange = (newPage: number) => {
-    const p = new URLSearchParams(searchParams)
-    p.set("page", String(newPage))
-    setLocation(`/discover?${p.toString()}`)
-  }
+  const results = scholarshipsQuery.data?.scholarships ?? []
+  const total = scholarshipsQuery.data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const categories = categoriesQuery.data?.categories ?? []
+  const providers = providersQuery.data?.providers ?? []
+  const hasActiveFilters = Boolean(
+    search || Object.values(filters).some(Boolean) || sortBy !== "newest",
+  )
 
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
-
-  // Client-side filtering logic
-  const filteredData = mockScholarships.filter(s => {
-    if (filters.search && !s.title.toLowerCase().includes(filters.search.toLowerCase()) && !s.providerName.toLowerCase().includes(filters.search.toLowerCase())) return false;
-    if (filters.state && s.state.toLowerCase() !== filters.state.toLowerCase()) return false;
-    if (filters.providerType && s.providerType !== filters.providerType) return false;
-    if (filters.courseLevel && s.courseLevel !== filters.courseLevel && s.courseLevel !== "Any") return false;
-    if (filters.gender && s.gender !== "any" && filters.gender !== s.gender) return false;
-    if (filters.maxIncome) {
-      if (s.maxAnnualIncome !== null && s.maxAnnualIncome < parseInt(filters.maxIncome)) return false;
-    }
-    if (filters.casteCategory) {
-      if (!s.casteCategories.includes("All") && !s.casteCategories.includes(filters.casteCategory)) return false;
-    }
-    return true;
-  });
-
-  const limit = 10;
-  const total = filteredData.length;
-  const paginatedData = filteredData.slice((filters.page - 1) * limit, filters.page * limit);
+  const activeChips = [
+    search ? `Keyword: ${search}` : "",
+    filters.categoryId ? categories.find((c) => String(c.id) === filters.categoryId)?.name ?? "Category" : "",
+    filters.providerId ? providers.find((p) => String(p.id) === filters.providerId)?.name ?? "Provider" : "",
+    filters.state,
+    filters.courseLevel,
+    filters.courseStream,
+    filters.maxFamilyIncome ? `Income ≤ ₹${Number(filters.maxFamilyIncome).toLocaleString("en-IN")}` : "",
+    filters.academicPercentage ? `${filters.academicPercentage}% minimum` : "",
+    filters.deadlineWithinDays ? `Next ${filters.deadlineWithinDays} days` : "",
+  ].filter(Boolean)
 
   return (
-    <div className="bg-background min-h-screen pb-20">
-      <div className="bg-primary py-12 text-primary-foreground border-b border-primary-foreground/10">
+    <div className="min-h-screen bg-background pb-20">
+      <section className="border-b bg-primary py-12 text-primary-foreground">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Discover Scholarships</h1>
-          <p className="text-primary-foreground/80 max-w-2xl text-lg">
-            Find the right financial support for your education. Filter by state, category, and course level to see what you qualify for.
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary-foreground/70">Scholarship directory</p>
+          <h1 className="text-3xl font-bold md:text-4xl">Find scholarships that fit your goals</h1>
+          <p className="mt-3 max-w-2xl text-base text-primary-foreground/80">
+            Search the live scholarship catalogue and narrow results by education, course, income, deadline, and provider.
           </p>
+          <div className="mt-7 max-w-3xl">
+            <SearchBar
+              value={search}
+              onChange={(value) => updateUrl({ search: value })}
+              placeholder="Search by scholarship name, provider, or keyword…"
+              size="large"
+            />
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Mobile Filter Toggle */}
-          <div className="lg:hidden flex justify-between items-center mb-4">
-            <span className="font-medium text-lg">{total} Results</span>
-            <Button onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)} variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" /> Filters
-            </Button>
-          </div>
+        <div className="mb-5 flex items-center justify-between lg:hidden">
+          <p className="font-semibold">{scholarshipsQuery.isLoading ? "Searching…" : `${total} scholarships`}</p>
+          <Button variant="outline" onClick={() => setMobileFiltersOpen((open) => !open)} className="gap-2">
+            <SlidersHorizontal className="h-4 w-4" /> Filters
+          </Button>
+        </div>
 
-          {/* Sidebar */}
-          <aside className={`lg:w-1/4 ${isMobileFiltersOpen ? 'block' : 'hidden'} lg:block`}>
-            <div className="bg-card rounded-xl border shadow-sm p-6 lg:sticky lg:top-24">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Filter className="h-5 w-5" /> Filters
-                </h2>
-                {isMobileFiltersOpen && (
-                  <Button variant="ghost" size="icon" onClick={() => setIsMobileFiltersOpen(false)}>
-                    <X className="h-5 w-5" />
-                  </Button>
-                )}
+        <div className="flex flex-col gap-8 lg:flex-row">
+          <aside className={`lg:w-72 lg:shrink-0 ${mobileFiltersOpen ? "block" : "hidden lg:block"}`}>
+            <div className="rounded-xl border bg-card p-5 shadow-sm lg:sticky lg:top-24">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 font-semibold"><Filter className="h-4 w-4" /> Filters</h2>
+                {mobileFiltersOpen && <Button variant="ghost" size="icon" onClick={() => setMobileFiltersOpen(false)}><X className="h-4 w-4" /></Button>}
               </div>
-              
-              <div className="mb-6">
-                 <SearchBar 
-                   value={filters.search}
-                   onChange={(val) => applyFilters({ search: val })}
-                   placeholder="Keywords..."
-                 />
-              </div>
-
-              <FilterPanel 
+              <FilterPanel
                 filters={filters}
-                onFilterChange={applyFilters}
+                categories={categories}
+                providers={providers}
+                onFilterChange={(change) => updateUrl(change)}
                 onReset={clearFilters}
               />
             </div>
           </aside>
 
-          {/* Main List */}
-          <main className="lg:w-3/4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 bg-muted/30 p-4 rounded-xl border">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-foreground">{total} Scholarships found</span>
-                {/* Active Filter Chips */}
-                {(currentParams.state || currentParams.courseLevel || currentParams.providerType) && (
-                  <div className="flex flex-wrap gap-1 ml-2 border-l pl-2 border-border/50">
-                    {currentParams.state && (
-                      <Badge variant="secondary" className="gap-1 bg-background text-xs font-normal">
-                        {currentParams.state} <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => applyFilters({ state: "" })} />
-                      </Badge>
-                    )}
-                    {currentParams.courseLevel && (
-                      <Badge variant="secondary" className="gap-1 bg-background text-xs font-normal">
-                        {currentParams.courseLevel} <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => applyFilters({ courseLevel: "" })} />
-                      </Badge>
-                    )}
-                    {currentParams.providerType && (
-                      <Badge variant="secondary" className="gap-1 bg-background text-xs font-normal">
-                        {formatProviderType(currentParams.providerType)} <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => applyFilters({ providerType: "" })} />
-                      </Badge>
-                    )}
-                  </div>
-                )}
+          <main className="min-w-0 flex-1">
+            <div className="mb-5 rounded-xl border bg-muted/25 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold">
+                    {scholarshipsQuery.isLoading ? "Finding scholarships…" : `${total} scholarship${total === 1 ? "" : "s"} found`}
+                  </p>
+                  {hasActiveFilters && <p className="mt-1 text-xs text-muted-foreground">Filters are applied from the live catalogue.</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="sort-by" className="text-sm text-muted-foreground">Sort by</label>
+                  <NativeSelect
+                    id="sort-by"
+                    className="h-9 w-auto min-w-40 bg-background text-sm"
+                    value={sortBy}
+                    onChange={(event) => updateUrl({ sortBy: event.target.value })}
+                    data-testid="select-sort"
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="relevance">Relevance</option>
+                    <option value="deadline_asc">Deadline soonest</option>
+                    <option value="amount_desc">Highest benefit</option>
+                  </NativeSelect>
+                </div>
               </div>
-              
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <NativeSelect className="h-9 text-sm" defaultValue="newest">
-                  <option value="newest">Newest First</option>
-                  <option value="deadline">Deadline (Soonest)</option>
-                  <option value="amount">Amount (Highest)</option>
-                </NativeSelect>
-              </div>
+              {activeChips.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+                  {activeChips.map((chip) => <Badge key={chip} variant="secondary">{chip}</Badge>)}
+                  <button type="button" onClick={clearFilters} className="text-xs font-medium text-primary hover:underline">Clear all</button>
+                </div>
+              )}
             </div>
 
-            {simulateError ? (
-              <ErrorState 
-                title="Failed to load scholarships"
-                description="We encountered an issue while connecting to the database. Please try again."
-                onRetry={() => {
-                  const p = new URLSearchParams(searchParams);
-                  p.delete("simulateError");
-                  setLocation(`/discover?${p.toString()}`);
-                }}
-              />
-            ) : isLoading ? (
-              <LoadingGrid count={4} isCompact={true} />
-            ) : total === 0 ? (
-              <EmptyState 
+            {scholarshipsQuery.isLoading ? (
+              <LoadingGrid count={3} isCompact />
+            ) : scholarshipsQuery.isError ? (
+              <ErrorState title="Couldn’t load scholarships" description="The scholarship catalogue could not be reached. Please try again." onRetry={() => scholarshipsQuery.refetch()} />
+            ) : results.length === 0 ? (
+              <EmptyState
                 icon={<SearchIcon className="h-12 w-12" />}
-                title="No scholarships found"
-                description="Try adjusting your filters to see more results."
+                title="No scholarships match those filters"
+                description="Try removing a filter or searching with a broader keyword."
                 actionLabel="Clear all filters"
                 onAction={clearFilters}
               />
             ) : (
-              <div className="space-y-6">
-                {paginatedData.map((scholarship) => (
-                  <ScholarshipCard key={scholarship.id} scholarship={scholarship} isCompact={true} />
-                ))}
-
-                {/* Pagination */}
-                {total > limit && (
-                  <div className="flex justify-center items-center gap-4 mt-10">
-                    <Button 
-                      variant="outline" 
-                      disabled={currentParams.page <= 1}
-                      onClick={() => handlePageChange(currentParams.page - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm font-medium px-4">
-                      Page {currentParams.page} of {Math.ceil(total / limit)}
-                    </span>
-                    <Button 
-                      variant="outline" 
-                      disabled={currentParams.page >= Math.ceil(total / limit)}
-                      onClick={() => handlePageChange(currentParams.page + 1)}
-                    >
-                      Next
-                    </Button>
+              <>
+                <div className="space-y-5">
+                  {results.map((scholarship) => <DiscoveryScholarshipCard key={scholarship.id} scholarship={scholarship} />)}
+                </div>
+                {totalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <Button variant="outline" disabled={page <= 1} onClick={() => updateUrl({ page: page - 1 })}>Previous</Button>
+                    <span className="text-sm font-medium">Page {page} of {totalPages}</span>
+                    <Button variant="outline" disabled={page >= totalPages} onClick={() => updateUrl({ page: page + 1 })}>Next</Button>
                   </div>
                 )}
-              </div>
+              </>
             )}
           </main>
         </div>

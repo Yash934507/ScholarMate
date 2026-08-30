@@ -36,6 +36,8 @@ export const scholarshipsTable = pgTable("scholarships", {
   state: text("state").notNull().default("National"),
   // School | Diploma | UG | PG | PhD | Any
   courseLevel: text("course_level").notNull().default("Any"),
+  // Specific course/stream, e.g. "B.Tech", "MBBS", "B.Com", "Arts" | "Any"
+  courseStream: text("course_stream").notNull().default("Any"),
   // any | male | female | other
   genderEligibility: text("gender_eligibility").notNull().default("any"),
   lastVerifiedDate: date("last_verified_date", { mode: "string" }).notNull(),

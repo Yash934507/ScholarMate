@@ -8,28 +8,62 @@
 import type { ListScholarshipsCourseLevel } from './listScholarshipsCourseLevel';
 import type { ListScholarshipsGender } from './listScholarshipsGender';
 import type { ListScholarshipsProviderType } from './listScholarshipsProviderType';
+import type { ListScholarshipsSortBy } from './listScholarshipsSortBy';
 
 export type ListScholarshipsParams = {
 /**
- * Full-text search across title and description
+ * Keyword search across title, description, eligibility summary, and provider name
  */
 search?: string;
+/**
+ * Filter by category
+ */
+categoryId?: number;
 /**
  * Filter by state (e.g. Maharashtra, National)
  */
 state?: string;
 /**
+ * Filter by a specific provider
+ */
+providerId?: number;
+/**
  * Filter by provider type
  */
 providerType?: ListScholarshipsProviderType;
 /**
- * Filter by course level
+ * Filter by education level
  */
 courseLevel?: ListScholarshipsCourseLevel;
+/**
+ * Filter by specific course/stream (e.g. B.Tech, MBBS)
+ */
+courseStream?: string;
 /**
  * Filter by gender eligibility
  */
 gender?: ListScholarshipsGender;
+/**
+ * Student's annual family income (INR); returns scholarships with no income cap or a cap at or above this value
+ * @minimum 0
+ */
+maxFamilyIncome?: number;
+/**
+ * Student's academic percentage; returns scholarships with no minimum or a minimum at or below this value
+ * @minimum 0
+ * @maximum 100
+ */
+academicPercentage?: number;
+/**
+ * Only include scholarships whose deadline falls within this many days from today (e.g. 7, 30, 90, 365)
+ * @minimum 1
+ * @maximum 3650
+ */
+deadlineWithinDays?: number;
+/**
+ * Sort order for results
+ */
+sortBy?: ListScholarshipsSortBy;
 /**
  * @minimum 1
  */
