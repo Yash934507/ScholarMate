@@ -1,15 +1,143 @@
+import { useEffect, useState } from "react"
+import { Link } from "wouter"
+import {
+  getGetStudentProfileQueryKey,
+  useGetStudentProfile,
+  useUpdateStudentProfile,
+  type StudentProfile,
+  type StudentProfileInput,
+} from "@workspace/api-client-react"
+import { ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Switch } from "@/components/ui/switch"
-import { Link } from "wouter"
-import { ArrowLeft, Save } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useQueryClient } from "@tanstack/react-query"
+
+type ProfileForm = {
+  fullName: string
+  phone: string
+  state: string
+  city: string
+  college: string
+  university: string
+  course: string
+  educationLevel: string
+  academicPercentage: string
+  annualFamilyIncome: string
+  dateOfBirth: string
+  gender: string
+  category: string
+  disabilityStatus: string
+  minorityCommunity: string
+}
+
+const emptyForm: ProfileForm = {
+  fullName: "",
+  phone: "",
+  state: "",
+  city: "",
+  college: "",
+  university: "",
+  course: "",
+  educationLevel: "",
+  academicPercentage: "",
+  annualFamilyIncome: "",
+  dateOfBirth: "",
+  gender: "",
+  category: "",
+  disabilityStatus: "",
+  minorityCommunity: "",
+}
+
+function profileToForm(profile: StudentProfile): ProfileForm {
+  return {
+    fullName: profile.fullName ?? "",
+    phone: profile.phone ?? "",
+    state: profile.state ?? "",
+    city: profile.city ?? "",
+    college: profile.college ?? "",
+    university: profile.university ?? "",
+    course: profile.course ?? "",
+    educationLevel: profile.educationLevel ?? "",
+    academicPercentage: profile.academicPercentage == null ? "" : String(profile.academicPercentage),
+    annualFamilyIncome: profile.annualFamilyIncome == null ? "" : String(profile.annualFamilyIncome),
+    dateOfBirth: profile.dateOfBirth ?? "",
+    gender: profile.gender ?? "",
+    category: profile.category ?? "",
+    disabilityStatus: profile.disabilityStatus ?? "",
+    minorityCommunity: profile.minorityCommunity ?? "",
+  }
+}
+
+function nullable(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed === "" ? null : trimmed
+}
+
+function numberOrNull(value: string): number | null {
+  const trimmed = value.trim()
+  if (trimmed === "") return null
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : null
+}
 
 export default function StudentProfile() {
+  const queryClient = useQueryClient()
+  const profileQuery = useGetStudentProfile({ query: { queryKey: getGetStudentProfileQueryKey(), retry: false } })
+  const updateMutation = useUpdateStudentProfile({
+    mutation: {
+      onSuccess: (profile) => {
+        queryClient.setQueryData(getGetStudentProfileQueryKey(), profile)
+        setForm(profileToForm(profile))
+        setSaved(true)
+        window.setTimeout(() => setSaved(false), 2500)
+      },
+    },
+  })
+  const [form, setForm] = useState<ProfileForm>(emptyForm)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (profileQuery.data) setForm(profileToForm(profileQuery.data))
+  }, [profileQuery.data])
+
+  const setField = (field: keyof ProfileForm, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data: StudentProfileInput = {
+      fullName: form.fullName.trim(),
+      phone: nullable(form.phone),
+      state: nullable(form.state),
+      city: nullable(form.city),
+      college: nullable(form.college),
+      university: nullable(form.university),
+      course: nullable(form.course),
+      educationLevel: nullable(form.educationLevel),
+      academicPercentage: numberOrNull(form.academicPercentage),
+      annualFamilyIncome: numberOrNull(form.annualFamilyIncome),
+      dateOfBirth: nullable(form.dateOfBirth),
+      gender: nullable(form.gender),
+      category: nullable(form.category),
+      disabilityStatus: nullable(form.disabilityStatus),
+      minorityCommunity: nullable(form.minorityCommunity),
+    }
+    updateMutation.mutate({ data })
+  }
+
+  if (profileQuery.isLoading) {
+    return <div className="min-h-[60vh] flex items-center justify-center gap-2 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> Loading your profile…</div>
+  }
+
+  if (profileQuery.isError) {
+    return <div className="container mx-auto max-w-3xl px-4 py-20 text-center"><h1 className="text-2xl font-bold">We couldn’t load your profile</h1><p className="mt-2 text-muted-foreground">Please refresh and try again.</p></div>
+  }
+
   return (
     <div className="bg-muted/20 min-h-screen pb-20">
       <div className="bg-primary text-primary-foreground py-8 border-b border-primary-foreground/10">
@@ -18,256 +146,85 @@ export default function StudentProfile() {
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
           </Link>
           <h1 className="text-3xl font-bold">My Profile</h1>
-          <p className="text-primary-foreground/80 mt-2">Update your details to get accurate scholarship recommendations.</p>
+          <p className="text-primary-foreground/80 mt-2">Keep your details current for more accurate scholarship matches.</p>
         </div>
       </div>
 
       <div className="container mx-auto px-4 max-w-4xl py-8">
-        <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
-          
+        <form className="space-y-8" onSubmit={submit}>
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Basic details about you.</CardDescription>
-            </CardHeader>
+            <CardHeader><CardTitle>Personal information</CardTitle><CardDescription>Your email is managed securely by Clerk and cannot be edited here.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field label="Full name" id="fullName" value={form.fullName} onChange={(value) => setField("fullName", value)} required />
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input id="fullName" defaultValue="Priya Sharma" />
+                  <Label htmlFor="email">Email address</Label>
+                  <Input id="email" value={profileQuery.data?.email ?? ""} disabled className="bg-muted" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" defaultValue="priya.s@example.com" disabled className="bg-muted" />
-                  <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" defaultValue="+91 9876543210" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dob">Date of Birth</Label>
-                  <Input id="dob" type="date" defaultValue="2003-05-15" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Gender</Label>
-                  <Select defaultValue="female">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer-not">Prefer not to say</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Field label="Phone number (optional)" id="phone" type="tel" value={form.phone} onChange={(value) => setField("phone", value)} />
+                <Field label="Date of birth (optional)" id="dateOfBirth" type="date" value={form.dateOfBirth} onChange={(value) => setField("dateOfBirth", value)} />
+                <SelectField label="Gender (optional)" value={form.gender} onChange={(value) => setField("gender", value)} items={[["female", "Female"], ["male", "Male"], ["other", "Other"], ["prefer_not_to_say", "Prefer not to say"]]} />
+                <SelectField label="Caste category (optional)" value={form.category} onChange={(value) => setField("category", value)} items={[["general", "General / Open"], ["obc", "OBC"], ["sc", "SC"], ["st", "ST"], ["ews", "EWS"], ["vjnt", "VJ / NT"]]} />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
-                <div className="space-y-2">
-                  <Label>State of Residence</Label>
-                  <Select defaultValue="maharashtra">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="maharashtra">Maharashtra</SelectItem>
-                      <SelectItem value="karnataka">Karnataka</SelectItem>
-                      <SelectItem value="delhi">Delhi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">City / District</Label>
-                  <Input id="city" defaultValue="Mumbai" />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
+                <SelectField label="State of residence" value={form.state} onChange={(value) => setField("state", value)} items={[["Maharashtra", "Maharashtra"], ["Karnataka", "Karnataka"], ["Delhi", "Delhi"], ["Gujarat", "Gujarat"], ["Other", "Other state"]]} />
+                <Field label="City / district" id="city" value={form.city} onChange={(value) => setField("city", value)} />
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Academic Details</CardTitle>
-              <CardDescription>Your current educational status.</CardDescription>
-            </CardHeader>
+            <CardHeader><CardTitle>Academic details</CardTitle><CardDescription>Tell us where and what you are studying.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Current Education Level</Label>
-                  <Select defaultValue="ug">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="school">School (11th/12th)</SelectItem>
-                      <SelectItem value="diploma">Diploma</SelectItem>
-                      <SelectItem value="ug">Undergraduate (UG)</SelectItem>
-                      <SelectItem value="pg">Postgraduate (PG)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="course">Course / Field of Study</Label>
-                  <Input id="course" defaultValue="B.Sc. Computer Science" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="institution">Institution Name</Label>
-                  <Input id="institution" defaultValue="St. Xavier's College" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Year of Study</Label>
-                  <Select defaultValue="2">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="percentage">Last Exam Percentage / CGPA</Label>
-                  <Input id="percentage" type="number" step="0.01" defaultValue="82.5" />
-                </div>
+                <SelectField label="Education level" value={form.educationLevel} onChange={(value) => setField("educationLevel", value)} items={[["School", "School (11th / 12th)"], ["Diploma", "Diploma"], ["UG", "Undergraduate (UG)"], ["PG", "Postgraduate (PG)"], ["PhD", "PhD"]]} />
+                <Field label="Course / field of study" id="course" value={form.course} onChange={(value) => setField("course", value)} />
+                <Field label="College" id="college" value={form.college} onChange={(value) => setField("college", value)} />
+                <Field label="University" id="university" value={form.university} onChange={(value) => setField("university", value)} />
+                <Field label="Academic percentage" id="academicPercentage" type="number" min="0" max="100" step="0.01" value={form.academicPercentage} onChange={(value) => setField("academicPercentage", value)} />
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-sm border-amber-200 dark:border-amber-900/50">
-            <CardHeader className="bg-amber-50/50 dark:bg-amber-950/10 border-b border-amber-100 dark:border-amber-900/30">
-              <CardTitle className="text-amber-800 dark:text-amber-400">Background Details</CardTitle>
-              <CardDescription>Crucial for determining eligibility for government schemes.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8 pt-6">
-              <div className="space-y-4">
-                <Label className="text-base">Caste Category</Label>
-                <RadioGroup defaultValue="general" className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
-                    <RadioGroupItem value="general" id="c-general" />
-                    <Label htmlFor="c-general" className="font-normal cursor-pointer">General / Open</Label>
-                  </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
-                    <RadioGroupItem value="obc" id="c-obc" />
-                    <Label htmlFor="c-obc" className="font-normal cursor-pointer">OBC</Label>
-                  </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
-                    <RadioGroupItem value="sc" id="c-sc" />
-                    <Label htmlFor="c-sc" className="font-normal cursor-pointer">SC</Label>
-                  </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
-                    <RadioGroupItem value="st" id="c-st" />
-                    <Label htmlFor="c-st" className="font-normal cursor-pointer">ST</Label>
-                  </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
-                    <RadioGroupItem value="ews" id="c-ews" />
-                    <Label htmlFor="c-ews" className="font-normal cursor-pointer">EWS</Label>
-                  </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
-                    <RadioGroupItem value="vjnt" id="c-vjnt" />
-                    <Label htmlFor="c-vjnt" className="font-normal cursor-pointer">VJ / NT</Label>
-                  </div>
+            <CardHeader className="bg-amber-50/50 dark:bg-amber-950/10 border-b border-amber-100 dark:border-amber-900/30"><CardTitle className="text-amber-800 dark:text-amber-400">Eligibility details</CardTitle><CardDescription>These details help you compare scholarships. They are not a guarantee of eligibility.</CardDescription></CardHeader>
+            <CardContent className="space-y-7 pt-6">
+              <div className="space-y-3">
+                <Label>Annual family income</Label>
+                <SelectField label="" value={form.annualFamilyIncome} onChange={(value) => setField("annualFamilyIncome", value)} items={[["100000", "Below ₹1,00,000"], ["250000", "₹1,00,001 – ₹2,50,000"], ["500000", "₹2,50,001 – ₹5,00,000"], ["800000", "₹5,00,001 – ₹8,00,000"], ["800001", "Above ₹8,00,000"]]} />
+              </div>
+              <div className="space-y-3">
+                <Label>Disability status</Label>
+                <RadioGroup value={form.disabilityStatus} onValueChange={(value) => setField("disabilityStatus", value)} className="flex flex-wrap gap-4">
+                  <RadioOption value="yes" id="disability-yes" label="Yes" />
+                  <RadioOption value="no" id="disability-no" label="No" />
+                  <RadioOption value="prefer_not_to_say" id="disability-prefer" label="Prefer not to say" />
                 </RadioGroup>
               </div>
-
-              <div className="space-y-4">
-                <Label className="text-base">Annual Family Income</Label>
-                <RadioGroup defaultValue="1to2.5" className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="below1" id="i-below1" />
-                    <Label htmlFor="i-below1" className="font-normal cursor-pointer">Below ₹1,00,000</Label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="1to2.5" id="i-1to2.5" />
-                    <Label htmlFor="i-1to2.5" className="font-normal cursor-pointer">₹1,00,001 – ₹2,50,000</Label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="2.5to5" id="i-2.5to5" />
-                    <Label htmlFor="i-2.5to5" className="font-normal cursor-pointer">₹2,50,001 – ₹5,00,000</Label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="5to8" id="i-5to8" />
-                    <Label htmlFor="i-5to8" className="font-normal cursor-pointer">₹5,00,001 – ₹8,00,000</Label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="above8" id="i-above8" />
-                    <Label htmlFor="i-above8" className="font-normal cursor-pointer">Above ₹8,00,000</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-start space-x-3 p-4 border rounded-lg bg-muted/30">
-                  <Checkbox id="disability" className="mt-1" />
-                  <div>
-                    <Label htmlFor="disability" className="font-medium cursor-pointer">I have a disability (PwD)</Label>
-                    <p className="text-sm text-muted-foreground mt-1">Check this if you possess a valid disability certificate.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3 p-4 border rounded-lg bg-muted/30">
-                  <Checkbox id="minority" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="minority" className="font-medium cursor-pointer">I belong to a minority community</Label>
-                    <p className="text-sm text-muted-foreground mt-1 mb-3">Such as Muslim, Christian, Sikh, Buddhist, Jain, Parsi.</p>
-                    <Select disabled>
-                      <SelectTrigger className="max-w-xs bg-background">
-                        <SelectValue placeholder="Select community" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="muslim">Muslim</SelectItem>
-                        <SelectItem value="christian">Christian</SelectItem>
-                        <SelectItem value="sikh">Sikh</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
+              <Field label="Minority community (optional)" id="minorityCommunity" placeholder="e.g. Muslim, Christian, Sikh, Buddhist, Jain, Parsi" value={form.minorityCommunity} onChange={(value) => setField("minorityCommunity", value)} />
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Preferences</CardTitle>
-              <CardDescription>Manage how we communicate with you.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive alerts for deadlines and new matching scholarships.</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="space-y-2 pt-4 border-t">
-                <Label>Reminder Timing</Label>
-                <Select defaultValue="7days">
-                  <SelectTrigger className="max-w-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7days">7 days before deadline</SelectItem>
-                    <SelectItem value="3days">3 days before deadline</SelectItem>
-                    <SelectItem value="1day">1 day before deadline</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="sticky bottom-4 bg-background/80 backdrop-blur-md p-4 rounded-xl border shadow-lg flex justify-end gap-4 z-10">
-            <Button variant="outline" type="button">Cancel</Button>
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2">
-              <Save className="w-4 h-4" /> Save Changes
+          <div className="sticky bottom-4 bg-background/90 backdrop-blur-md p-4 rounded-xl border shadow-lg flex items-center justify-between gap-4 z-10">
+            <div className="text-sm text-muted-foreground">{saved && <span className="inline-flex items-center gap-2 text-green-700"><CheckCircle2 className="h-4 w-4" /> Profile saved</span>}{updateMutation.isError && <span className="text-destructive">Couldn’t save your profile. Check the fields and try again.</span>}</div>
+            <Button disabled={updateMutation.isPending || form.fullName.trim().length === 0} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2">
+              {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save changes
             </Button>
           </div>
         </form>
       </div>
     </div>
   )
+}
+
+function Field({ label, id, value, onChange, type = "text", placeholder, required, min, max, step }: { label: string; id: string; value: string; onChange: (value: string) => void; type?: string; placeholder?: string; required?: boolean; min?: string; max?: string; step?: string }) {
+  return <div className="space-y-2"><Label htmlFor={id}>{label}{required && <span className="text-destructive"> *</span>}</Label><Input id={id} type={type} value={value} placeholder={placeholder} required={required} min={min} max={max} step={step} onChange={(event) => onChange(event.target.value)} /></div>
+}
+
+function SelectField({ label, value, onChange, items }: { label: string; value: string; onChange: (value: string) => void; items: string[][] }) {
+  return <div className="space-y-2">{label && <Label>{label}</Label>}<Select value={value || undefined} onValueChange={onChange}><SelectTrigger><SelectValue placeholder={label ? `Select ${label.toLowerCase()}` : "Select an income range"} /></SelectTrigger><SelectContent>{items.map(([itemValue, itemLabel]) => <SelectItem key={itemValue} value={itemValue}>{itemLabel}</SelectItem>)}</SelectContent></Select></div>
+}
+
+function RadioOption({ value, id, label }: { value: string; id: string; label: string }) {
+  return <div className="flex items-center gap-2"><RadioGroupItem value={value} id={id} /><Label htmlFor={id} className="font-normal cursor-pointer">{label}</Label></div>
 }

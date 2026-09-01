@@ -7,8 +7,9 @@
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
-    ,"test:eligibility": "node --experimental-strip-types --test src/lib/eligibility-engine.test.ts"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:eligibility": "node --experimental-strip-types --test src/lib/eligibility-engine.test.ts",
+    "test:auth": "node --experimental-strip-types --test src/lib/auth-config.test.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -74,5 +75,9 @@
     "vite": "catalog:",
     "wouter": "^3.3.5",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "@clerk/react": "^6.14.8",
+    "@clerk/themes": "^2.4.57"
   }
 }

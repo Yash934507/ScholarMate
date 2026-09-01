@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ScholarMate">
+  <rect width="64" height="64" rx="16" fill="#172033"/>
+  <path d="M13 25.5 32 15l19 10.5L32 36 13 25.5Z" fill="#f59e0b"/>
+  <path d="M19 31v11.5c7.4 6.1 18.6 6.1 26 0V31l-13 7-13-7Z" fill="#fffdf8"/>
+  <path d="M51 26v13" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+</svg>

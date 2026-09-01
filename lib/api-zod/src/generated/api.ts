@@ -956,3 +956,84 @@ export const AdminDeleteRequiredDocumentParams = zod.object({
 export const AdminDeleteRequiredDocumentResponse = zod.void()
 
 
+/**
+ * @summary Get the authenticated student's profile
+ */
+export const GetStudentProfileResponse = zod.object({
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "college": zod.string().nullish(),
+  "university": zod.string().nullish(),
+  "course": zod.string().nullish(),
+  "educationLevel": zod.string().nullish(),
+  "academicPercentage": zod.number().nullish(),
+  "annualFamilyIncome": zod.number().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "category": zod.string().nullish(),
+  "disabilityStatus": zod.string().nullish(),
+  "minorityCommunity": zod.string().nullish(),
+  "otherAttributes": zod.record(zod.string(), zod.union([zod.string(),zod.number(),zod.boolean()]).nullable()),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Create or update the authenticated student's profile
+ */
+
+export const updateStudentProfileBodyAcademicPercentageMin = 0;
+export const updateStudentProfileBodyAcademicPercentageMax = 100;
+
+export const updateStudentProfileBodyAnnualFamilyIncomeMin = 0;
+
+
+
+export const UpdateStudentProfileBody = zod.object({
+  "fullName": zod.string().min(1),
+  "phone": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "college": zod.string().nullish(),
+  "university": zod.string().nullish(),
+  "course": zod.string().nullish(),
+  "educationLevel": zod.string().nullish(),
+  "academicPercentage": zod.number().min(updateStudentProfileBodyAcademicPercentageMin).max(updateStudentProfileBodyAcademicPercentageMax).nullish(),
+  "annualFamilyIncome": zod.number().min(updateStudentProfileBodyAnnualFamilyIncomeMin).nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "category": zod.string().nullish(),
+  "disabilityStatus": zod.string().nullish(),
+  "minorityCommunity": zod.string().nullish(),
+  "otherAttributes": zod.record(zod.string(), zod.union([zod.string(),zod.number(),zod.boolean()]).nullable()).optional()
+})
+
+export const UpdateStudentProfileResponse = zod.object({
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "college": zod.string().nullish(),
+  "university": zod.string().nullish(),
+  "course": zod.string().nullish(),
+  "educationLevel": zod.string().nullish(),
+  "academicPercentage": zod.number().nullish(),
+  "annualFamilyIncome": zod.number().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "category": zod.string().nullish(),
+  "disabilityStatus": zod.string().nullish(),
+  "minorityCommunity": zod.string().nullish(),
+  "otherAttributes": zod.record(zod.string(), zod.union([zod.string(),zod.number(),zod.boolean()]).nullable()),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+

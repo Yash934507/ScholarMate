@@ -1,4 +1,7 @@
 import { Link } from "wouter"
+import { useClerk } from "@clerk/react"
+import { getGetStudentProfileQueryKey, useGetStudentProfile } from "@workspace/api-client-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,18 +13,36 @@ import {
 } from "lucide-react"
 
 export default function StudentDashboard() {
-  const isComplete = 75;
+  const { signOut } = useClerk()
+  const queryClient = useQueryClient()
+  const profileQuery = useGetStudentProfile({
+    query: { queryKey: getGetStudentProfileQueryKey(), retry: false },
+  })
+  const profile = profileQuery.data
+  const completedFields = [
+    profile?.fullName,
+    profile?.state,
+    profile?.city,
+    profile?.college,
+    profile?.university,
+    profile?.course,
+    profile?.educationLevel,
+    profile?.academicPercentage,
+    profile?.annualFamilyIncome,
+    profile?.category,
+  ].filter((value) => value !== null && value !== undefined && value !== "").length
+  const isComplete = Math.round((completedFields / 10) * 100)
 
   return (
     <div className="bg-muted/20 min-h-[calc(100vh-64px)] flex flex-col md:flex-row">
       {/* Sidebar Nav */}
       <aside className="w-full md:w-64 bg-card border-r border-border/60 shrink-0">
         <div className="p-6 hidden md:block">
-          <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4">
-            P
+            <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4">
+              {(profile?.fullName ?? "S").slice(0, 1).toUpperCase()}
           </div>
-          <h2 className="font-bold text-lg">Priya Sharma</h2>
-          <p className="text-sm text-muted-foreground">UG Student • Mumbai</p>
+          <h2 className="font-bold text-lg">{profile?.fullName || "Student"}</h2>
+          <p className="text-sm text-muted-foreground">{profile?.educationLevel || "Student"}{profile?.city ? ` • ${profile.city}` : ""}</p>
         </div>
         
         <nav className="flex md:flex-col overflow-x-auto md:overflow-visible border-b md:border-b-0 p-2 md:p-4 gap-1">
@@ -46,7 +67,7 @@ export default function StudentDashboard() {
             <Settings className="w-5 h-5" />
             Settings
           </button>
-          <button className="flex items-center gap-3 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-lg font-medium transition-colors whitespace-nowrap text-left">
+          <button onClick={() => { queryClient.clear(); void signOut({ redirectUrl: "/" }) }} className="flex items-center gap-3 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-lg font-medium transition-colors whitespace-nowrap text-left">
             <LogOut className="w-5 h-5" />
             Logout
           </button>
@@ -56,7 +77,7 @@ export default function StudentDashboard() {
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-10 max-w-5xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-foreground">Welcome back, Priya!</h1>
+          <h1 className="text-3xl font-bold mb-2 text-foreground">Welcome back, {profile?.fullName?.split(" ")[0] || "student"}!</h1>
           <p className="text-muted-foreground">Here's an overview of your scholarship journey.</p>
         </div>
 

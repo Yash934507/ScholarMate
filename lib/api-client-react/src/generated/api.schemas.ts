@@ -13,6 +13,88 @@ export interface ErrorResponse {
   error: string;
 }
 
+export type StudentProfileOtherAttributes = {[key: string]: string | number | boolean | null};
+
+export interface StudentProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  college?: string | null;
+  /** @nullable */
+  university?: string | null;
+  /** @nullable */
+  course?: string | null;
+  /** @nullable */
+  educationLevel?: string | null;
+  /** @nullable */
+  academicPercentage?: number | null;
+  /** @nullable */
+  annualFamilyIncome?: number | null;
+  /** @nullable */
+  dateOfBirth?: string | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  category?: string | null;
+  /** @nullable */
+  disabilityStatus?: string | null;
+  /** @nullable */
+  minorityCommunity?: string | null;
+  otherAttributes: StudentProfileOtherAttributes;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type StudentProfileInputOtherAttributes = {[key: string]: string | number | boolean | null};
+
+export interface StudentProfileInput {
+  /** @minLength 1 */
+  fullName: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  college?: string | null;
+  /** @nullable */
+  university?: string | null;
+  /** @nullable */
+  course?: string | null;
+  /** @nullable */
+  educationLevel?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  academicPercentage?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  annualFamilyIncome?: number | null;
+  /** @nullable */
+  dateOfBirth?: string | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  category?: string | null;
+  /** @nullable */
+  disabilityStatus?: string | null;
+  /** @nullable */
+  minorityCommunity?: string | null;
+  otherAttributes?: StudentProfileInputOtherAttributes;
+}
+
 export type ProviderProviderType = typeof ProviderProviderType[keyof typeof ProviderProviderType];
 
 

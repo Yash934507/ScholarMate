@@ -5,3 +5,4 @@ export * from "./scholarship-category-links";
 export * from "./eligibility-criteria";
 export * from "./required-documents";
 export * from "./scholarship-sources";
+export * from "./student-profiles";

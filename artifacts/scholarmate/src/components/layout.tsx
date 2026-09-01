@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter"
 import { GraduationCap, Menu, X, Twitter, Linkedin, Instagram } from "lucide-react"
 import { useState } from "react"
 import { buttonVariants } from "./ui/button"
+import { Show, useClerk } from "@clerk/react"
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -57,12 +58,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login" className={buttonVariants({ variant: "outline", className: "font-semibold border-primary/20 hover:bg-primary/5" })}>
-              Login
-            </Link>
-            <Link href="/register" className={buttonVariants({ className: "bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-sm" })}>
-              Register
-            </Link>
+            <Show when="signed-out">
+              <Link href="/sign-in" className={buttonVariants({ variant: "outline", className: "font-semibold border-primary/20 hover:bg-primary/5" })}>Login</Link>
+              <Link href="/sign-up" className={buttonVariants({ className: "bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-sm" })}>Register</Link>
+            </Show>
+            <Show when="signed-in">
+              <Link href="/dashboard" className={buttonVariants({ variant: "outline", className: "font-semibold border-primary/20 hover:bg-primary/5" })}>Dashboard</Link>
+              <LogoutButton />
+            </Show>
           </div>
 
           {/* Mobile Toggle */}
@@ -94,12 +97,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           
           <div className="p-4 flex flex-col gap-3 mt-auto bg-muted/20">
-            <Link href="/login" onClick={closeMenu} className={buttonVariants({ variant: "outline", className: "w-full justify-center h-12 text-base" })}>
-              Login
-            </Link>
-            <Link href="/register" onClick={closeMenu} className={buttonVariants({ className: "w-full justify-center h-12 text-base bg-accent text-accent-foreground hover:bg-accent/90" })}>
-              Register Free Account
-            </Link>
+            <Show when="signed-out">
+              <Link href="/sign-in" onClick={closeMenu} className={buttonVariants({ variant: "outline", className: "w-full justify-center h-12 text-base" })}>Login</Link>
+              <Link href="/sign-up" onClick={closeMenu} className={buttonVariants({ className: "w-full justify-center h-12 text-base bg-accent text-accent-foreground hover:bg-accent/90" })}>Register Free Account</Link>
+            </Show>
+            <Show when="signed-in">
+              <Link href="/dashboard" onClick={closeMenu} className={buttonVariants({ variant: "outline", className: "w-full justify-center h-12 text-base" })}>Dashboard</Link>
+              <LogoutButton />
+            </Show>
           </div>
         </div>
       )}
@@ -180,5 +185,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
     </div>
+  )
+}
+
+function LogoutButton() {
+  const { signOut } = useClerk()
+  return (
+    <button
+      type="button"
+      onClick={() => signOut({ redirectUrl: "/" })}
+      className={buttonVariants({ variant: "outline", className: "font-semibold border-primary/20 hover:bg-primary/5" })}
+    >
+      Log out
+    </button>
   )
 }
